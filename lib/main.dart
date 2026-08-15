@@ -1,24 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quimanda/app/modules/home/cubit/home_cubit.dart';
-import 'package:quimanda/app/modules/home/views/home_view.dart';
-import 'package:quimanda/app/theme/app_theme.dart';
+import 'app/core/theme.dart';
+import 'app/di/dependencies.dart';
+import 'app/modules/auth/cubit/auth_cubit.dart';
+import 'app/modules/auth/cubit/auth_state.dart';
+import 'app/modules/dashboard/cubit/dashboard_cubit.dart';
+import 'app/modules/pedidos/cubit/pedidos_cubit.dart';
+import 'app/modules/produtos/cubit/produtos_cubit.dart';
+import 'app/modules/loja/cubit/loja_cubit.dart';
+import 'app/modules/onboarding/bloc/onboarding_cubit.dart';
+import 'app/routes/app_routes.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await setupDependencies();
+  runApp(const QuiMandaApp());
 }
-w
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+
+class QuiMandaApp extends StatelessWidget {
+  const QuiMandaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'quiManda',
-      theme: AppTheme.theme,
-      home: BlocProvider(
-        create: (_) => HomeCubit(),
-        child: const HomeView(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<OnboardingCubit>(create: (context) => getIt<OnboardingCubit>()..checkOnboarding()),
+        BlocProvider<AuthCubit>(create: (context) => getIt<AuthCubit>()),
+        BlocProvider<DashboardCubit>(create: (context) => getIt<DashboardCubit>()),
+        BlocProvider<PedidosCubit>(create: (context) => getIt<PedidosCubit>()),
+        BlocProvider<ProdutosCubit>(create: (context) => getIt<ProdutosCubit>()),
+        BlocProvider<LojaCubit>(create: (context) => getIt<LojaCubit>()),
+      ],
+      child: MaterialApp(
+        title: 'QuiManda',
+        theme: AppTheme.lightTheme,
+        debugShowCheckedModeBanner: false,
+        initialRoute: AppRoutes.splash,
+        routes: AppRoutes.routes,
       ),
     );
   }
