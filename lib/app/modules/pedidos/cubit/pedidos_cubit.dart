@@ -4,7 +4,7 @@ import 'pedidos_state.dart';
 import '../repository/pedidos_repository.dart';
 
 class PedidosCubit extends Cubit<PedidosState> {
-  final PedidosRepository _repository;
+  final PedidoRepository _repository;
   
   // 🔥 Manter o estado atual para fazer merge
   PedidosLoaded? _currentLoadedState;

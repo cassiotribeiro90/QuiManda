@@ -44,8 +44,8 @@ Future<void> setupDependencies() async {
 
   // Pedidos
   getIt.registerLazySingleton<PedidosService>(() => PedidosService(getIt<ApiClient>()));
-  getIt.registerLazySingleton<PedidosRepository>(() => PedidosRepository(getIt<PedidosService>()));
-  getIt.registerFactory<PedidosCubit>(() => PedidosCubit(getIt<PedidosRepository>()));
+  getIt.registerLazySingleton<PedidoRepository>(() => PedidoRepository(getIt<PedidosService>()));
+  getIt.registerFactory<PedidosCubit>(() => PedidosCubit(getIt<PedidoRepository>()));
 
   // Produtos
   getIt.registerLazySingleton<ProdutosRepository>(() => ProdutosRepository(getIt<ApiClient>()));

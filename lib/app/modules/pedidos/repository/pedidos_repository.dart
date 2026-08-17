@@ -2,7 +2,7 @@
 import '../model/pedido_model.dart';
 import '../service/pedidos_service.dart';
 
-class PedidosRepository {
+class PedidoRepository {
   final PedidosService _service;
   
   // 🔥 Cache simples para evitar recarregar desnecessário
@@ -10,7 +10,7 @@ class PedidosRepository {
   DateTime? _cacheTime;
   final Duration _cacheDuration = const Duration(seconds: 15);
 
-  PedidosRepository(this._service);
+  PedidoRepository(this._service);
 
   Future<List<PedidoModel>> listarAtivos() async {
     final data = await _service.listarAtivos();
