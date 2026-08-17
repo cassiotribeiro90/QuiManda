@@ -1,17 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_state.dart';
 import '../service/auth_service.dart';
 import '../model/lojista_model.dart';
+import '../../../services/token_service.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
-  AuthCubit(this._authService) : super(AuthInitial());
+  final TokenService _tokenService;
+  
+  AuthCubit(this._authService, this._tokenService) : super(AuthInitial());
 
   Future<void> checkAuth() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    final lojistaId = prefs.getInt('lojista_id');
+    final token = _tokenService.getAccessToken();
+    final lojistaId = _tokenService.getLojistaId();
     
     if (token != null && lojistaId != null) {
       try {
@@ -56,11 +57,8 @@ class AuthCubit extends Cubit<AuthState> {
         final refreshToken = data['refresh_token'] as String;
         final lojista = LojistaModel.fromJson(data['lojista']);
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
-        await prefs.setString('refresh_token', refreshToken);
-        await prefs.setInt('lojista_id', lojista.id);
-        await prefs.setString('lojista_nome', lojista.nome);
+        await _tokenService.saveTokens(token, refreshToken);
+        await _tokenService.saveLojista(data['lojista']);
 
         emit(AuthAuthenticated(lojista, token));
       } else {
@@ -80,9 +78,8 @@ class AuthCubit extends Cubit<AuthState> {
         final token = data['access_token'] as String;
         final lojista = LojistaModel.fromJson(data['lojista']);
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
-        await prefs.setInt('lojista_id', lojista.id);
+        await _tokenService.saveTokens(token, ''); // ou refresh token se vier
+        await _tokenService.saveLojista(data['lojista']);
 
         emit(AuthAuthenticated(lojista, token));
       } else {
@@ -98,11 +95,7 @@ class AuthCubit extends Cubit<AuthState> {
       await _authService.logout();
     } catch (_) {}
     
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('refresh_token');
-    await prefs.remove('lojista_id');
-    await prefs.remove('lojista_nome');
+    await _tokenService.clear();
     emit(AuthUnauthenticated());
   }
 }

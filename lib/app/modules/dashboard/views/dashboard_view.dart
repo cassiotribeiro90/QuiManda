@@ -7,6 +7,8 @@ import '../cubit/dashboard_state.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../../routes/app_routes.dart';
 
+import '../../home/views/home_view.dart';
+
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
 
@@ -28,7 +30,22 @@ class _DashboardViewState extends State<DashboardView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
+        leading: LayoutBuilder(
+          builder: (context, constraints) {
+            if (MediaQuery.of(context).size.width < 900) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => context.read<DashboardCubit>().loadDashboard(),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

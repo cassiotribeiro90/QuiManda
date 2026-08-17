@@ -4,6 +4,8 @@ import '../cubit/loja_cubit.dart';
 import '../cubit/loja_state.dart';
 import '../model/loja_model.dart';
 
+import '../../home/views/home_view.dart';
+
 class LojaEditView extends StatefulWidget {
   const LojaEditView({super.key});
 
@@ -27,7 +29,20 @@ class _LojaEditViewState extends State<LojaEditView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações da Loja')),
+      appBar: AppBar(
+        title: const Text('Loja'),
+        leading: LayoutBuilder(
+          builder: (context, constraints) {
+            if (MediaQuery.of(context).size.width < 900) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
       body: BlocConsumer<LojaCubit, LojaState>(
         listener: (context, state) {
           if (state is LojaLoaded) {
@@ -42,8 +57,6 @@ class _LojaEditViewState extends State<LojaEditView> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is LojaLoaded || state is LojaInitial) {
-            // If it's the first time or loaded, show the form
-            // Note: In LojaLoaded we populated controllers in listener
             return Padding(
               padding: const EdgeInsets.all(16.0),
               child: Form(

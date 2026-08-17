@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api_client.dart';
+import '../services/token_service.dart';
 import '../modules/auth/service/auth_service.dart';
 import '../modules/auth/cubit/auth_cubit.dart';
 import '../modules/dashboard/repository/dashboard_repository.dart';
@@ -15,6 +16,7 @@ import '../modules/produtos/cubit/produtos_cubit.dart';
 import '../modules/loja/repository/loja_repository.dart';
 import '../modules/loja/service/loja_service.dart';
 import '../modules/loja/cubit/loja_cubit.dart';
+import '../modules/home/cubit/home_cubit.dart';
 import '../modules/onboarding/bloc/onboarding_cubit.dart';
 
 final getIt = GetIt.instance;
@@ -23,11 +25,17 @@ Future<void> setupDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
   
-  getIt.registerLazySingleton<ApiClient>(() => ApiClient());
+  // Services
+  getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
+  
+  getIt.registerLazySingleton<ApiClient>(() => ApiClient(getIt<TokenService>()));
+
+  // Home
+  getIt.registerFactory<HomeCubit>(() => HomeCubit());
 
   // Auth
   getIt.registerLazySingleton<AuthService>(() => AuthService(getIt<ApiClient>()));
-  getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>()));
+  getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>(), getIt<TokenService>()));
 
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository(getIt<ApiClient>()));
@@ -35,9 +43,9 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<DashboardCubit>(() => DashboardCubit(getIt<DashboardService>()));
 
   // Pedidos
-  getIt.registerLazySingleton<PedidosRepository>(() => PedidosRepository(getIt<ApiClient>()));
-  getIt.registerLazySingleton<PedidosService>(() => PedidosService(getIt<PedidosRepository>()));
-  getIt.registerFactory<PedidosCubit>(() => PedidosCubit(getIt<PedidosService>()));
+  getIt.registerLazySingleton<PedidosService>(() => PedidosService(getIt<ApiClient>()));
+  getIt.registerLazySingleton<PedidosRepository>(() => PedidosRepository(getIt<PedidosService>()));
+  getIt.registerFactory<PedidosCubit>(() => PedidosCubit(getIt<PedidosRepository>()));
 
   // Produtos
   getIt.registerLazySingleton<ProdutosRepository>(() => ProdutosRepository(getIt<ApiClient>()));

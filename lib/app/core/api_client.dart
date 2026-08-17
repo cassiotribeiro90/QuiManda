@@ -1,16 +1,20 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import '../services/token_service.dart';
+import 'interceptors/refresh_interceptor.dart';
 import 'constants.dart';
 
 class ApiClient {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  
   late final Dio dio;
+  final TokenService _tokenService;
 
-  ApiClient() {
+  ApiClient(this._tokenService) {
     dio = Dio(BaseOptions(
       baseUrl: AppConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
@@ -19,8 +23,7 @@ class ApiClient {
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString(AppConstants.tokenKey);
+        final token = _tokenService.getAccessToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
@@ -65,12 +68,31 @@ class ApiClient {
         }
         debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Handle global errors like 401 Unauthorized
-        if (e.response?.statusCode == 401) {
-          // Could trigger logout here
-        }
         return handler.next(e);
       },
     ));
+
+    // Adiciona o RefreshInterceptor para lidar com 401
+    dio.interceptors.add(RefreshInterceptor(
+      dio: dio,
+      tokenService: _tokenService,
+      navigatorKey: navigatorKey,
+    ));
+  }
+
+  Future<Response> get(String path, {Map<String, dynamic>? queryParams}) {
+    return dio.get(path, queryParameters: queryParams);
+  }
+
+  Future<Response> post(String path, {dynamic data, Map<String, dynamic>? queryParams}) {
+    return dio.post(path, data: data, queryParameters: queryParams);
+  }
+
+  Future<Response> put(String path, {dynamic data, Map<String, dynamic>? queryParams}) {
+    return dio.put(path, data: data, queryParameters: queryParams);
+  }
+
+  Future<Response> delete(String path, {dynamic data, Map<String, dynamic>? queryParams}) {
+    return dio.delete(path, data: data, queryParameters: queryParams);
   }
 }

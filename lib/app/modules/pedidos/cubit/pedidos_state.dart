@@ -1,7 +1,37 @@
+// lib/app/modules/pedidos/cubit/pedidos_state.dart
 import 'package:equatable/equatable.dart';
 import '../model/pedido_model.dart';
 
+class GrupoPedidos extends Equatable {
+  final String status;
+  final String label;
+  final int total;
+  final List<PedidoModel> itens;
+
+  const GrupoPedidos({
+    required this.status,
+    required this.label,
+    required this.total,
+    required this.itens,
+  });
+
+  factory GrupoPedidos.fromJson(Map<String, dynamic> json) {
+    return GrupoPedidos(
+      status: json['status'] ?? '',
+      label: json['label'] ?? '',
+      total: json['total'] ?? 0,
+      itens: (json['itens'] as List?)
+          ?.map((e) => PedidoModel.fromJson(e))
+          .toList() ?? [],
+    );
+  }
+
+  @override
+  List<Object?> get props => [status, label, total, itens];
+}
+
 abstract class PedidosState extends Equatable {
+  const PedidosState();
   @override
   List<Object?> get props => [];
 }
@@ -11,15 +41,70 @@ class PedidosInitial extends PedidosState {}
 class PedidosLoading extends PedidosState {}
 
 class PedidosLoaded extends PedidosState {
-  final List<PedidoModel> pedidos;
-  PedidosLoaded(this.pedidos);
+  final List<GrupoPedidos> grupos;
+  final int totalPedidos;
+  final bool isLoading; // 🔥 Indica refresh em background
+
+  const PedidosLoaded({
+    required this.grupos,
+    this.totalPedidos = 0,
+    this.isLoading = false,
+  });
+
+  PedidosLoaded copyWith({
+    List<GrupoPedidos>? grupos,
+    int? totalPedidos,
+    bool? isLoading,
+  }) {
+    return PedidosLoaded(
+      grupos: grupos ?? this.grupos,
+      totalPedidos: totalPedidos ?? this.totalPedidos,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+
   @override
-  List<Object?> get props => [pedidos];
+  List<Object?> get props => [grupos, totalPedidos, isLoading];
 }
 
 class PedidosError extends PedidosState {
   final String message;
-  PedidosError(this.message);
+  const PedidosError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+class PedidoAceitando extends PedidosState {
+  final int pedidoId;
+  const PedidoAceitando(this.pedidoId);
+  @override
+  List<Object?> get props => [pedidoId];
+}
+
+class PedidoAceito extends PedidosState {
+  final PedidoModel pedido;
+  const PedidoAceito(this.pedido);
+  @override
+  List<Object?> get props => [pedido];
+}
+
+class PedidoRecusando extends PedidosState {
+  final int pedidoId;
+  const PedidoRecusando(this.pedidoId);
+  @override
+  List<Object?> get props => [pedidoId];
+}
+
+class PedidoRecusado extends PedidosState {
+  final PedidoModel pedido;
+  const PedidoRecusado(this.pedido);
+  @override
+  List<Object?> get props => [pedido];
+}
+
+class PedidoActionError extends PedidosState {
+  final String message;
+  const PedidoActionError(this.message);
   @override
   List<Object?> get props => [message];
 }

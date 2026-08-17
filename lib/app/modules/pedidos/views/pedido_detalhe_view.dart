@@ -19,13 +19,15 @@ class PedidoDetalheView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInfoRow('Cliente', pedido.cliente),
+            _buildInfoRow('Cliente', pedido.clienteNome ?? 'N/A'),
             const Divider(),
-            _buildInfoRow('Status', pedido.status),
+            _buildInfoRow('Status', pedido.statusLabel),
             const Divider(),
-            _buildInfoRow('Valor', currencyFormat.format(pedido.valor)),
+            _buildInfoRow('Valor', currencyFormat.format(pedido.total)),
             const Divider(),
-            _buildInfoRow('Data', dateFormat.format(pedido.data.toLocal())),
+            _buildInfoRow('Data', pedido.criadoEm != null 
+                ? dateFormat.format(DateTime.parse(pedido.criadoEm!).toLocal())
+                : 'N/A'),
             const Spacer(),
             ElevatedButton(
               onPressed: () {
