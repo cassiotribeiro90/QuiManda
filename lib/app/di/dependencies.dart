@@ -38,7 +38,7 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>(), getIt<TokenService>()));
 
   // Dashboard
-  getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository(getIt<ApiClient>()));
+  getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository());
   getIt.registerLazySingleton<DashboardService>(() => DashboardService(getIt<DashboardRepository>()));
   getIt.registerFactory<DashboardCubit>(() => DashboardCubit(getIt<DashboardService>()));
 
@@ -48,12 +48,12 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<PedidosCubit>(() => PedidosCubit(getIt<PedidoRepository>()));
 
   // Produtos
-  getIt.registerLazySingleton<ProdutosRepository>(() => ProdutosRepository(getIt<ApiClient>()));
+  getIt.registerLazySingleton<ProdutosRepository>(() => ProdutosRepository());
   getIt.registerLazySingleton<ProdutosService>(() => ProdutosService(getIt<ProdutosRepository>()));
   getIt.registerFactory<ProdutosCubit>(() => ProdutosCubit(getIt<ProdutosService>()));
 
   // Loja
-  getIt.registerLazySingleton<LojaRepository>(() => LojaRepository(getIt<ApiClient>()));
+  getIt.registerLazySingleton<LojaRepository>(() => LojaRepository());
   getIt.registerLazySingleton<LojaService>(() => LojaService(getIt<LojaRepository>()));
   getIt.registerFactory<LojaCubit>(() => LojaCubit(getIt<LojaService>()));
 

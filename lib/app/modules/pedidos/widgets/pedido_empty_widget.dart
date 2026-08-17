@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class PedidoEmptyWidget extends StatelessWidget {
-  const PedidoEmptyWidget({Key? key}) : super(key: key);
+  const PedidoEmptyWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

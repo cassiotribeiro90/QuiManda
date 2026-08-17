@@ -4,6 +4,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
 
 class PhoneInputPage extends StatefulWidget {
   const PhoneInputPage({super.key});
@@ -27,7 +28,7 @@ class _PhoneInputPageState extends State<PhoneInputPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(title: const Text('Login')),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {

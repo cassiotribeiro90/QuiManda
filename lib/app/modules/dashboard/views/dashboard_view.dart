@@ -9,6 +9,8 @@ import '../../../routes/app_routes.dart';
 
 import '../../home/views/home_view.dart';
 
+import '../../../core/responsive/responsive_scaffold.dart';
+
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
 
@@ -27,7 +29,7 @@ class _DashboardViewState extends State<DashboardView> {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
         leading: LayoutBuilder(
@@ -108,7 +110,7 @@ class _DashboardViewState extends State<DashboardView> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
+              backgroundColor: color.withValues(alpha: 0.1),
               child: Icon(icon, color: color),
             ),
             const SizedBox(width: 16),

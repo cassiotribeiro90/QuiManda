@@ -1,8 +1,7 @@
 import '../../../core/api_client.dart';
 
 class DashboardRepository {
-  final ApiClient _apiClient;
-  DashboardRepository(this._apiClient);
+  DashboardRepository();
 
   Future<Map<String, dynamic>> getStats() async {
     // Mocking response

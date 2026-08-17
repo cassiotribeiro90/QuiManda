@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/loja_cubit.dart';
 import '../cubit/loja_state.dart';
 import '../model/loja_model.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
 
 import '../../home/views/home_view.dart';
 
@@ -28,7 +29,7 @@ class _LojaEditViewState extends State<LojaEditView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(
         title: const Text('Loja'),
         leading: LayoutBuilder(

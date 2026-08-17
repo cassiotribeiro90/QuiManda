@@ -23,7 +23,7 @@ class SideMenu extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [theme.primaryColor, theme.primaryColor.withOpacity(0.8)],
+                colors: [theme.primaryColor, theme.primaryColor.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -139,17 +139,17 @@ class SideMenu extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           icon,
-          color: isSelected ? theme.primaryColor : theme.iconTheme.color?.withOpacity(0.7),
+          color: isSelected ? theme.primaryColor : theme.iconTheme.color?.withValues(alpha: 0.7),
         ),
         title: Text(
           label,
           style: TextStyle(
-            color: isSelected ? theme.primaryColor : theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+            color: isSelected ? theme.primaryColor : theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         selected: isSelected,
-        selectedTileColor: theme.primaryColor.withOpacity(0.1),
+        selectedTileColor: theme.primaryColor.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         onTap: () {
           context.read<HomeCubit>().changeModule(index, label);

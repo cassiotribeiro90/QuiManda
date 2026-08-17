@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class TimerWidget extends StatelessWidget {
   final int tempoEspera; // em minutos
 
-  const TimerWidget({Key? key, required this.tempoEspera}) : super(key: key);
+  const TimerWidget({super.key, required this.tempoEspera});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class TimerWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 1),
       ),

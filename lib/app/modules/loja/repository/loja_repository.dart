@@ -1,8 +1,7 @@
 import '../../../core/api_client.dart';
 
 class LojaRepository {
-  final ApiClient _apiClient;
-  LojaRepository(this._apiClient);
+  LojaRepository();
 
   Future<Map<String, dynamic>> getLoja() async {
     // Mock

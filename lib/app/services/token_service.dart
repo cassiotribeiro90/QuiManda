@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/app_config.dart';
 
 class TokenService {
   static const String accessTokenKey = 'auth_token';

@@ -1,8 +1,7 @@
 import '../../../core/api_client.dart';
 
 class ProdutosRepository {
-  final ApiClient _apiClient;
-  ProdutosRepository(this._apiClient);
+  ProdutosRepository();
 
   Future<List<Map<String, dynamic>>> getProdutos() async {
     // Mock

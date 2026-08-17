@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class StatusBadgeWidget extends StatelessWidget {
   final String status;
 
-  const StatusBadgeWidget({Key? key, required this.status}) : super(key: key);
+  const StatusBadgeWidget({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +12,7 @@ class StatusBadgeWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: config.color.withOpacity(0.15),
+        color: config.color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

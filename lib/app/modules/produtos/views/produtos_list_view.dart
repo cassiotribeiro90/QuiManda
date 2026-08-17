@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../cubit/produtos_cubit.dart';
 import '../cubit/produtos_state.dart';
 import 'produto_form_view.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
 
 import '../../home/views/home_view.dart';
 
@@ -25,7 +26,7 @@ class _ProdutosListViewState extends State<ProdutosListView> {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(
         title: const Text('Produtos'),
         leading: LayoutBuilder(
@@ -71,7 +72,7 @@ class _ProdutosListViewState extends State<ProdutosListView> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(8),
                     itemCount: state.produtos.length,
-                    separatorBuilder: (_, __) => const Divider(),
+                    separatorBuilder: (_, index) => const Divider(),
                     itemBuilder: (context, index) {
                       final produto = state.produtos[index];
                       return ListTile(

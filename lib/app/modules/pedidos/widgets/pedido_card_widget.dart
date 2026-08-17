@@ -11,19 +11,16 @@ class PedidoCardWidget extends StatelessWidget {
   final VoidCallback onRecusar;
 
   const PedidoCardWidget({
-    Key? key,
+    super.key,
     required this.pedido,
     required this.onTap,
     required this.onAceitar,
     required this.onRecusar,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final isNovo = pedido.isNovo;
-    final isPreparando = pedido.isPreparando;
-    final isPronto = pedido.isPronto;
-    final isSaiu = pedido.isSaiu;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

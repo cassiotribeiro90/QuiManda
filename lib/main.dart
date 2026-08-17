@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app/core/theme.dart';
 import 'app/di/dependencies.dart';
 import 'app/modules/auth/cubit/auth_cubit.dart';
-import 'app/modules/auth/cubit/auth_state.dart';
 import 'app/modules/dashboard/cubit/dashboard_cubit.dart';
 import 'app/modules/pedidos/cubit/pedidos_cubit.dart';
 import 'app/modules/produtos/cubit/produtos_cubit.dart';

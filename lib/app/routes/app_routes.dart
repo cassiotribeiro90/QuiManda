@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../modules/auth/views/splash_page.dart';
 import '../modules/auth/views/phone_input_page.dart';
 import '../modules/auth/views/otp_verification_page.dart';
-import '../modules/dashboard/views/dashboard_view.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/onboarding/views/onboarding_view.dart';
 

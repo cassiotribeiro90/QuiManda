@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String telefone;
@@ -23,7 +24,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(title: const Text('Verificação')),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {

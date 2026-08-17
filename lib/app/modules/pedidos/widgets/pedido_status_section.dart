@@ -13,7 +13,7 @@ class PedidoStatusSection extends StatelessWidget {
   final Function(PedidoModel) onCardTap;
 
   const PedidoStatusSection({
-    Key? key,
+    super.key,
     required this.status,
     required this.label,
     required this.total,
@@ -21,7 +21,7 @@ class PedidoStatusSection extends StatelessWidget {
     required this.onAceitar,
     required this.onRecusar,
     required this.onCardTap,
-  }) : super(key: key);
+  });
 
   Color get _corStatus {
     switch (status) {
@@ -66,7 +66,7 @@ class PedidoStatusSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _corStatus.withOpacity(0.15),
+                  color: _corStatus.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -87,7 +87,7 @@ class PedidoStatusSection extends StatelessWidget {
           onTap: () => onCardTap(pedido),
           onAceitar: () => onAceitar(pedido.id),
           onRecusar: () => onRecusar(pedido.id),
-        )).toList(),
+        )),
       ],
     );
   }
