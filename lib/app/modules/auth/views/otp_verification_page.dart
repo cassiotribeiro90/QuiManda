@@ -4,6 +4,7 @@ import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../core/theme/app_text_styles.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String telefone;
@@ -39,68 +40,75 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         builder: (context, state) {
           return Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Verifique seu SMS',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Verifique seu SMS',
+                      style: AppTextStyles.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enviamos um código de 6 dígitos para ${widget.telefone}',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 32, letterSpacing: 12, fontWeight: FontWeight.bold),
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: '000000',
+                        counterText: '',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                      ),
+                      onChanged: (value) {
+                        if (value.length == 6) {
+                          context.read<AuthCubit>().verifyOtp(widget.telefone, value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: state is AuthOtpVerifying
+                            ? null
+                            : () {
+                                final code = _otpController.text;
+                                if (code.length == 6) {
+                                  context.read<AuthCubit>().verifyOtp(widget.telefone, code);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Digite o código de 6 dígitos.')),
+                                  );
+                                }
+                              },
+                        child: state is AuthOtpVerifying
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('VERIFICAR CÓDIGO', style: AppTextStyles.button),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: state is AuthOtpVerifying ? null : () => Navigator.pop(context),
+                      child: const Text('Alterar número de telefone', style: TextStyle(color: Colors.grey)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enviamos um código de 6 dígitos para ${widget.telefone}',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 24, letterSpacing: 8),
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    hintText: '000000',
-                    counterText: '',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (value) {
-                    if (value.length == 6) {
-                      context.read<AuthCubit>().verifyOtp(widget.telefone, value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: state is AuthOtpVerifying
-                        ? null
-                        : () {
-                            final code = _otpController.text;
-                            if (code.length == 6) {
-                              context.read<AuthCubit>().verifyOtp(widget.telefone, code);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Digite o código de 6 dígitos.')),
-                              );
-                            }
-                          },
-                    child: state is AuthOtpVerifying
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Verificar Código'),
-                  ),
-                ),
-                TextButton(
-                  onPressed: state is AuthOtpVerifying ? null : () => Navigator.pop(context),
-                  child: const Text('Alterar número de telefone'),
-                ),
-              ],
+              ),
             ),
           );
         },

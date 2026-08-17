@@ -5,6 +5,7 @@ import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../core/theme/app_text_styles.dart';
 
 class PhoneInputPage extends StatefulWidget {
   const PhoneInputPage({super.key});
@@ -47,58 +48,65 @@ class _PhoneInputPageState extends State<PhoneInputPage> {
         builder: (context, state) {
           return Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Digite seu número de telefone',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Digite seu número de telefone',
+                      style: AppTextStyles.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Enviaremos um código de verificação por SMS para acessar sua conta de gestor.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: _phoneController,
+                      inputFormatters: [_maskFormatter],
+                      keyboardType: TextInputType.phone,
+                      autofocus: true,
+                      style: AppTextStyles.bodyLarge,
+                      decoration: InputDecoration(
+                        labelText: 'Telefone',
+                        hintText: '(00) 00000-0000',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.phone_android),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: state is AuthLoading
+                            ? null
+                            : () {
+                                final phone = _phoneController.text;
+                                if (phone.length >= 14) {
+                                  context.read<AuthCubit>().sendOtp(phone);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Por favor, informe um telefone válido.')),
+                                  );
+                                }
+                              },
+                        child: state is AuthLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('ENVIAR CÓDIGO', style: AppTextStyles.button),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Enviaremos um código de verificação por SMS para acessar sua conta de gestor.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextField(
-                  controller: _phoneController,
-                  inputFormatters: [_maskFormatter],
-                  keyboardType: TextInputType.phone,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Telefone',
-                    hintText: '(00) 00000-0000',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone_android),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: state is AuthLoading
-                        ? null
-                        : () {
-                            final phone = _phoneController.text;
-                            if (phone.length >= 14) {
-                              context.read<AuthCubit>().sendOtp(phone);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Por favor, informe um telefone válido.')),
-                              );
-                            }
-                          },
-                    child: state is AuthLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Enviar Código'),
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         },

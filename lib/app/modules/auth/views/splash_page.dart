@@ -24,8 +24,8 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
 
-    context.read<OnboardingCubit>().checkOnboarding();
-    await context.read<AuthCubit>().checkAuth();
+    await context.read<OnboardingCubit>().checkOnboarding();
+    await context.read<AuthCubit>().checkAuthStatus();
     
     _checkNavigation();
   }

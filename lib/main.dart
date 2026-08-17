@@ -27,7 +27,7 @@ class QuiMandaApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<OnboardingCubit>(create: (context) => getIt<OnboardingCubit>()..checkOnboarding()),
-        BlocProvider<AuthCubit>(create: (context) => getIt<AuthCubit>()),
+        BlocProvider<AuthCubit>(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
         BlocProvider<HomeCubit>(create: (context) => getIt<HomeCubit>()),
         BlocProvider<DashboardCubit>(create: (context) => getIt<DashboardCubit>()),
         BlocProvider<PedidosCubit>(create: (context) => getIt<PedidosCubit>()),

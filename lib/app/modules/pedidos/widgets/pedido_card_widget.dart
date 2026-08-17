@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../model/pedido_model.dart';
 import 'timer_widget.dart';
 import 'status_badge_widget.dart';
+import '../../../core/theme/app_text_styles.dart';
 
 class PedidoCardWidget extends StatelessWidget {
   final PedidoModel pedido;
@@ -41,7 +42,7 @@ class PedidoCardWidget extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Pedido #${pedido.codigo ?? pedido.id}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: AppTextStyles.titleSmall,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -61,7 +62,7 @@ class PedidoCardWidget extends StatelessWidget {
                   Expanded(
                     child: Text(
                       pedido.clienteNome ?? 'Cliente',
-                      style: const TextStyle(fontSize: 14),
+                      style: AppTextStyles.bodyMedium,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -85,16 +86,12 @@ class PedidoCardWidget extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${pedido.itens.length} itens',
-                    style: const TextStyle(fontSize: 14),
+                    style: AppTextStyles.bodyMedium,
                   ),
                   const Spacer(),
                   Text(
                     'R\$ ${pedido.total.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
+                    style: AppTextStyles.price,
                   ),
                 ],
               ),
@@ -105,7 +102,7 @@ class PedidoCardWidget extends StatelessWidget {
                 const Divider(thickness: 1),
                 const Text(
                   'Itens:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 4),
                 // Se muitos itens, coloca em um container com altura máxima e scroll
@@ -123,11 +120,11 @@ class PedidoCardWidget extends StatelessWidget {
                             children: [
                               Text(
                                 '${item.quantidade}x',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(item.nome)),
-                              Text('R\$ ${(item.precoUnitario * item.quantidade).toStringAsFixed(2)}'),
+                              Expanded(child: Text(item.nome, style: AppTextStyles.bodyMedium)),
+                              Text('R\$ ${(item.precoUnitario * item.quantidade).toStringAsFixed(2)}', style: AppTextStyles.bodyMedium),
                             ],
                           ),
                         );
@@ -142,11 +139,11 @@ class PedidoCardWidget extends StatelessWidget {
                         children: [
                           Text(
                             '${item.quantidade}x',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(item.nome)),
-                          Text('R\$ ${(item.precoUnitario * item.quantidade).toStringAsFixed(2)}'),
+                          Expanded(child: Text(item.nome, style: AppTextStyles.bodyMedium)),
+                          Text('R\$ ${(item.precoUnitario * item.quantidade).toStringAsFixed(2)}', style: AppTextStyles.bodyMedium),
                         ],
                       ),
                     )).toList(),
@@ -220,7 +217,7 @@ class PedidoCardWidget extends StatelessWidget {
                       ),
                       child: Text(
                         _getTextoBotaoPrincipal(),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: AppTextStyles.button,
                       ),
                     ),
                   ),
@@ -235,7 +232,7 @@ class PedidoCardWidget extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           side: const BorderSide(color: Colors.red),
                         ),
-                        child: const Text('RECUSAR'),
+                        child: const Text('RECUSAR', style: AppTextStyles.button),
                       ),
                     )
                   else
@@ -247,7 +244,7 @@ class PedidoCardWidget extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: const Text('VER DETALHES'),
+                        child: const Text('VER DETALHES', style: AppTextStyles.button),
                       ),
                     ),
                 ],

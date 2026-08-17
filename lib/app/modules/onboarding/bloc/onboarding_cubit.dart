@@ -1,15 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/services/storage_service.dart';
 import 'onboarding_state.dart';
 
 class OnboardingCubit extends Cubit<OnboardingState> {
-  final SharedPreferences _sharedPreferences;
-  static const String _onboardingKey = 'onboarding_seen';
+  final StorageService _storageService;
 
-  OnboardingCubit(this._sharedPreferences) : super(OnboardingInitial());
+  OnboardingCubit(this._storageService) : super(OnboardingInitial());
 
-  void checkOnboarding() {
-    final seen = _sharedPreferences.getBool(_onboardingKey) ?? false;
+  Future<void> checkOnboarding() async {
+    final seen = await _storageService.isOnboardingShown();
     if (seen) {
       emit(OnboardingSeen());
     } else {
@@ -18,7 +17,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   }
 
   Future<void> markOnboardingAsSeen() async {
-    await _sharedPreferences.setBool(_onboardingKey, true);
+    await _storageService.setOnboardingShown();
     emit(OnboardingSeen());
   }
 }

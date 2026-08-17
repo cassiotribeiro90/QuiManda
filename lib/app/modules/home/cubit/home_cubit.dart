@@ -20,7 +20,7 @@ class HomeModuleChanged extends HomeState {
 }
 
 class HomeCubit extends Cubit<HomeState> {
-  HomeCubit() : super(const HomeModuleChanged(0, 'Dashboard'));
+  HomeCubit() : super(const HomeModuleChanged(1, 'Pedidos'));
 
   void changeModule(int index, String title) {
     emit(HomeModuleChanged(index, title));

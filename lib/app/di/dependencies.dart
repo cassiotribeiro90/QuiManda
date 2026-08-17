@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api_client.dart';
+import '../core/services/storage_service.dart';
 import '../services/token_service.dart';
 import '../modules/auth/service/auth_service.dart';
 import '../modules/auth/cubit/auth_cubit.dart';
@@ -26,6 +27,7 @@ Future<void> setupDependencies() async {
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
   
   // Services
+  getIt.registerLazySingleton<StorageService>(() => StorageService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
   
   getIt.registerLazySingleton<ApiClient>(() => ApiClient(getIt<TokenService>()));
@@ -35,7 +37,7 @@ Future<void> setupDependencies() async {
 
   // Auth
   getIt.registerLazySingleton<AuthService>(() => AuthService(getIt<ApiClient>()));
-  getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>(), getIt<TokenService>()));
+  getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>(), getIt<TokenService>(), getIt<StorageService>()));
 
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository());
@@ -58,5 +60,5 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<LojaCubit>(() => LojaCubit(getIt<LojaService>()));
 
   // Onboarding
-  getIt.registerFactory<OnboardingCubit>(() => OnboardingCubit(getIt<SharedPreferences>()));
+  getIt.registerFactory<OnboardingCubit>(() => OnboardingCubit(getIt<StorageService>()));
 }
