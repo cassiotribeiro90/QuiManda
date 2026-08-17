@@ -1,0 +1,522 @@
+// lib/app/modules/pedidos/views/pedidos_list_page.dart
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubit/pedidos_cubit.dart';
+import '../cubit/pedidos_state.dart';
+import '../model/pedido_model.dart';
+import '../widgets/pedido_status_section.dart';
+import '../widgets/pedido_empty_widget.dart';
+import '../widgets/status_badge_widget.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
+
+import '../../home/views/home_view.dart';
+
+class PedidosListPage extends StatefulWidget {
+  const PedidosListPage({super.key});
+
+  @override
+  State<PedidosListPage> createState() => _PedidosListPageState();
+}
+
+class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingObserver {
+  Timer? _timer;
+  bool _isRefreshing = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Carregar pedidos ao entrar na tela
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _carregarPedidos();
+    });
+    
+    // 🔥 Iniciar timer para refresh automático (a cada 30 segundos)
+    _iniciarTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 🔥 Recarregar quando o app voltar para o foreground
+    if (state == AppLifecycleState.resumed) {
+      _refreshSilencioso();
+    }
+  }
+
+  void _iniciarTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted && !_isRefreshing) {
+        _refreshSilencioso();
+      }
+    });
+  }
+
+  void _carregarPedidos() {
+    context.read<PedidosCubit>().carregarPedidosAtivos();
+  }
+
+  // 🔥 Refresh silencioso (sem perder scroll)
+  Future<void> _refreshSilencioso() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    await context.read<PedidosCubit>().refreshSilencioso();
+    if (mounted) _isRefreshing = false;
+  }
+
+  // 🔥 Refresh com pull-to-refresh
+  Future<void> _onRefresh() async {
+    await context.read<PedidosCubit>().refresh();
+  }
+
+  // 🔥 Refresh manual (botão)
+  void _onManualRefresh() {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    context.read<PedidosCubit>().refresh().then((_) {
+      if (mounted) _isRefreshing = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveScaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('Pedidos'),
+            const SizedBox(width: 8),
+            BlocBuilder<PedidosCubit, PedidosState>(
+              builder: (context, state) {
+                if (state is PedidosLoaded && state.totalPedidos > 0) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${state.totalPedidos}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+        leading: LayoutBuilder(
+          builder: (context, constraints) {
+            if (MediaQuery.of(context).size.width < 900) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        actions: [
+          // 🔥 Indicador de refresh silencioso
+          BlocBuilder<PedidosCubit, PedidosState>(
+            builder: (context, state) {
+              if (state is PedidosLoaded && state.isLoading) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _isRefreshing ? null : _onManualRefresh,
+                tooltip: 'Atualizar',
+              );
+            },
+          ),
+        ],
+      ),
+      body: BlocConsumer<PedidosCubit, PedidosState>(
+        listener: (context, state) {
+          if (state is PedidoActionError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+          if (state is PedidoAceito) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Pedido aceito com sucesso!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          if (state is PedidoRecusado) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('❌ Pedido recusado'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          // 🔥 Estado de carregamento inicial (apenas na primeira vez ou refresh manual)
+          if (state is PedidosLoading && state is! PedidosLoaded) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Carregando pedidos...'),
+                ],
+              ),
+            );
+          }
+
+          // 🔥 Estado de erro
+          if (state is PedidosError && state is! PedidosLoaded) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Erro ao carregar pedidos',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.message,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _onManualRefresh,
+                    child: const Text('Tentar novamente'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // 🔥 Estado carregado
+          if (state is PedidosLoaded) {
+            if (state.totalPedidos == 0) {
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: const SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: PedidoEmptyWidget(),
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: ListView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 20),
+                children: state.grupos.map((grupo) => PedidoStatusSection(
+                  key: ValueKey('section_${grupo.status}'), // 🔥 Key preserva estado
+                  status: grupo.status,
+                  label: grupo.label,
+                  total: grupo.total,
+                  pedidos: grupo.itens,
+                  onAceitar: (id) => _tratarAcaoPrincipal(context, id, grupo.status),
+                  onRecusar: (id) => _mostrarMotivoRecusa(context, id),
+                  onCardTap: (pedido) => _abrirDetalhes(context, pedido),
+                )).toList(),
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  void _tratarAcaoPrincipal(BuildContext context, int id, String status) {
+    if (status == 'novo') {
+      _confirmarAceitar(context, id);
+    } else {
+      String novoStatus = '';
+      if (status == 'em_preparo') {
+        novoStatus = 'pronto';
+      } else if (status == 'pronto') {
+        novoStatus = 'saiu';
+      } else if (status == 'saiu') {
+        novoStatus = 'entregue';
+      }
+      
+      if (novoStatus.isNotEmpty) {
+        context.read<PedidosCubit>().atualizarStatus(id, novoStatus);
+      }
+    }
+  }
+
+  void _abrirDetalhes(BuildContext context, PedidoModel pedido) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final trocoPara = pedido.trocoPara;
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Pedido #${pedido.codigo ?? pedido.id}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  StatusBadgeWidget(status: pedido.status),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildInfoRow('Cliente', pedido.clienteNome ?? 'N/A'),
+              _buildInfoRow('Telefone', pedido.clienteTelefone ?? 'N/A'),
+              const Divider(),
+              _buildInfoRow('Subtotal', 'R\$ ${pedido.subtotal?.toStringAsFixed(2) ?? '0,00'}'),
+              _buildInfoRow('Taxa entrega', 'R\$ ${pedido.taxaEntrega?.toStringAsFixed(2) ?? '0,00'}'),
+              _buildInfoRow('Total', 'R\$ ${pedido.total.toStringAsFixed(2)}', isBold: true),
+              const Divider(),
+              _buildInfoRow('Forma pagamento', pedido.formaPagamento ?? 'N/A'),
+              if (trocoPara != null && trocoPara > 0)
+                _buildInfoRow('Troco para', 'R\$ ${trocoPara.toStringAsFixed(2)}'),
+              const Divider(),
+              if (pedido.itens.isNotEmpty) ...[
+                const Text(
+                  'Itens:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: pedido.itens.length,
+                    itemBuilder: (context, index) {
+                      final item = pedido.itens[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Text('${item.quantidade}x ${item.nome} - R\$ ${item.precoUnitario.toStringAsFixed(2)}'),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              if (pedido.observacoes != null && pedido.observacoes!.isNotEmpty) ...[
+                const Divider(),
+                Text(
+                  'Observações: ${pedido.observacoes}',
+                  style: const TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Fechar'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                fontSize: isBold ? 16 : 14,
+                color: isBold ? Colors.green : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmarAceitar(BuildContext context, int id) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Aceitar pedido'),
+        content: const Text('Deseja aceitar este pedido?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<PedidosCubit>().aceitarPedido(id);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Aceitar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarMotivoRecusa(BuildContext context, int id) {
+    final motivoController = TextEditingController();
+    final codigos = [
+      'item_indisponivel',
+      'fora_area',
+      'volume_alto',
+      'outro'
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Motivo da recusa',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                children: codigos.map((codigo) {
+                  return ChoiceChip(
+                    label: Text(_getMotivoLabel(codigo)),
+                    selected: false, 
+                    onSelected: (selected) {
+                      motivoController.text = codigo;
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: motivoController,
+                decoration: const InputDecoration(
+                  labelText: 'Outro motivo (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.read<PedidosCubit>().recusarPedido(
+                          id,
+                          motivo: motivoController.text.isNotEmpty ? motivoController.text : null,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: const Text('Recusar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getMotivoLabel(String codigo) {
+    switch (codigo) {
+      case 'item_indisponivel': return 'Item indisponível';
+      case 'fora_area': return 'Fora da área';
+      case 'volume_alto': return 'Volume alto';
+      default: return 'Outro';
+    }
+  }
+}
