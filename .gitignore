@@ -42,3 +42,4 @@
 # Linux
 /linux/flutter/
 /linux/out/
+.flutter-plugins-dependencies
