@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/home_cubit.dart';
 import '../../dashboard/views/dashboard_view.dart';
 import '../../pedidos/views/pedidos_list_page.dart';
-import '../../produtos/views/produtos_list_view.dart';
-import '../../loja/views/loja_edit_view.dart';
+import '../../cardapio/views/cardapio_page.dart';
+import '../../configuracoes/views/configuracoes_loja_page.dart';
 import 'widgets/side_menu.dart';
 
 class HomeView extends StatefulWidget {
@@ -22,9 +22,8 @@ class _HomeViewState extends State<HomeView> {
   final List<Widget> _pages = [
     const DashboardView(),
     const PedidosListPage(),
-    const ProdutosListView(), // Representando "Cardápio"
-    const Center(child: Scaffold(body: Center(child: Text('Módulo de Estoque (Em breve)')))),
-    const LojaEditView(), // Representando "Configurações"
+    const CardapioPage(),
+    const ConfiguracoesLojaPage(),
   ];
 
   @override

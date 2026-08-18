@@ -17,8 +17,13 @@ import '../modules/produtos/cubit/produtos_cubit.dart';
 import '../modules/loja/repository/loja_repository.dart';
 import '../modules/loja/service/loja_service.dart';
 import '../modules/loja/cubit/loja_cubit.dart';
+import '../modules/cardapio/repositories/cardapio_repository.dart';
+import '../modules/cardapio/services/cardapio_service.dart';
+import '../modules/cardapio/bloc/cardapio_cubit.dart';
 import '../modules/home/cubit/home_cubit.dart';
 import '../modules/onboarding/bloc/onboarding_cubit.dart';
+import '../modules/configuracoes/services/loja_service.dart' as config_service;
+import '../modules/configuracoes/bloc/configuracoes_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -59,6 +64,15 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<LojaService>(() => LojaService(getIt<LojaRepository>()));
   getIt.registerFactory<LojaCubit>(() => LojaCubit(getIt<LojaService>()));
 
+  // Cardapio
+  getIt.registerLazySingleton<CardapioService>(() => CardapioService());
+  getIt.registerLazySingleton<CardapioRepository>(() => CardapioRepository(getIt<CardapioService>()));
+  getIt.registerFactory<CardapioCubit>(() => CardapioCubit(getIt<CardapioRepository>()));
+
   // Onboarding
   getIt.registerFactory<OnboardingCubit>(() => OnboardingCubit(getIt<StorageService>()));
+
+  // Configuracoes
+  getIt.registerLazySingleton<config_service.LojaService>(() => config_service.LojaService(getIt<ApiClient>()));
+  getIt.registerFactory<ConfiguracoesCubit>(() => ConfiguracoesCubit(getIt<config_service.LojaService>()));
 }

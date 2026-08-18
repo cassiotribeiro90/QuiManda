@@ -121,17 +121,12 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
             ),
           ],
         ),
-        leading: LayoutBuilder(
-          builder: (context, constraints) {
-            if (MediaQuery.of(context).size.width < 900) {
-              return IconButton(
+        leading: MediaQuery.of(context).size.width < 900
+            ? IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+              )
+            : null,
         actions: [
           // 🔥 Indicador de refresh silencioso
           BlocBuilder<PedidosCubit, PedidosState>(
@@ -327,15 +322,15 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
               const SizedBox(height: 16),
               _buildInfoRow('Cliente', pedido.clienteNome ?? 'N/A'),
               _buildInfoRow('Telefone', pedido.clienteTelefone ?? 'N/A'),
-              const Divider(),
+              const SizedBox(height: 12),
               _buildInfoRow('Subtotal', 'R\$ ${pedido.subtotal?.toStringAsFixed(2) ?? '0,00'}'),
               _buildInfoRow('Taxa entrega', 'R\$ ${pedido.taxaEntrega?.toStringAsFixed(2) ?? '0,00'}'),
               _buildInfoRow('Total', 'R\$ ${pedido.total.toStringAsFixed(2)}', isBold: true),
-              const Divider(),
+              const SizedBox(height: 12),
               _buildInfoRow('Forma pagamento', pedido.formaPagamento ?? 'N/A'),
               if (trocoPara != null && trocoPara > 0)
                 _buildInfoRow('Troco para', 'R\$ ${trocoPara.toStringAsFixed(2)}'),
-              const Divider(),
+              const SizedBox(height: 12),
               if (pedido.itens.isNotEmpty) ...[
                 const Text(
                   'Itens:',
@@ -357,7 +352,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 ),
               ],
               if (pedido.observacoes != null && pedido.observacoes!.isNotEmpty) ...[
-                const Divider(),
+                const SizedBox(height: 12),
                 Text(
                   'Observações: ${pedido.observacoes}',
                   style: const TextStyle(fontStyle: FontStyle.italic),

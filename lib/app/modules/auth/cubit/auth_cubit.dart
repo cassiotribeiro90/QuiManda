@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_state.dart';
 import '../service/auth_service.dart';
@@ -12,39 +13,44 @@ class AuthCubit extends Cubit<AuthState> {
   
   AuthCubit(this._authService, this._tokenService, this._storageService) : super(AuthInitial());
 
-  Future<void> checkAuth() async {
-    final token = await _storageService.getToken();
-    final lojistaId = _tokenService.getLojistaId();
-    
-    if (token != null && lojistaId != null) {
-      try {
-        final response = await _authService.getMe();
-        if (response['success'] == true) {
-          final lojista = LojistaModel.fromJson(response['data']['lojista']);
-          emit(AuthAuthenticated(lojista, token));
-          return;
-        }
-      } catch (_) {
-        await logout();
-      }
-    }
-    emit(AuthUnauthenticated());
-  }
-
   Future<void> checkAuthStatus() async {
-    final isLogged = await _storageService.isLoggedIn();
-    if (isLogged) {
-      final token = await _storageService.getToken();
+    final token = await _storageService.getToken();
+    if (token != null && token.isNotEmpty) {
       final lojistaData = _tokenService.getLojistaData();
-      if (lojistaData != null && token != null) {
+      if (lojistaData != null) {
         final lojista = LojistaModel.fromJson(lojistaData);
         emit(AuthAuthenticated(lojista, token));
       } else {
-        await checkAuth(); // Try to fetch from server if data is missing but token exists
+        // Token existe mas dados da loja não. Busca do servidor.
+        await checkAuth();
       }
     } else {
       emit(AuthUnauthenticated());
     }
+  }
+
+  Future<void> checkAuth() async {
+    final token = await _storageService.getToken();
+    
+    if (token != null && token.isNotEmpty) {
+      try {
+        final response = await _authService.getMe();
+        if (response['success'] == true) {
+          final data = response['data'];
+          final lojista = LojistaModel.fromJson(data['lojista']);
+          // Salva localmente para a próxima vez
+          await _tokenService.saveLojista(data['lojista']);
+          emit(AuthAuthenticated(lojista, token));
+          return;
+        }
+      } catch (e) {
+        debugPrint('❌ Erro ao validar token: $e');
+        if (e.toString().contains('401')) {
+           await logout();
+        }
+      }
+    }
+    emit(AuthUnauthenticated());
   }
 
   Future<void> sendOtp(String telefone) async {
@@ -77,6 +83,7 @@ class AuthCubit extends Cubit<AuthState> {
 
         await _storageService.saveToken(token);
         await _storageService.saveRefreshToken(refreshToken);
+        await _storageService.saveUserData(data['lojista']);
         await _tokenService.saveTokens(token, refreshToken);
         await _tokenService.saveLojista(data['lojista']);
 
@@ -96,10 +103,15 @@ class AuthCubit extends Cubit<AuthState> {
       if (response['success'] == true) {
         final data = response['data'];
         final token = data['access_token'] as String;
+        final refreshToken = data['refresh_token'] as String?;
         final lojista = LojistaModel.fromJson(data['lojista']);
 
         await _storageService.saveToken(token);
-        await _tokenService.saveTokens(token, ''); // ou refresh token se vier
+        if (refreshToken != null) {
+          await _storageService.saveRefreshToken(refreshToken);
+        }
+        await _storageService.saveUserData(data['lojista']);
+        await _tokenService.saveTokens(token, refreshToken ?? '');
         await _tokenService.saveLojista(data['lojista']);
 
         emit(AuthAuthenticated(lojista, token));
@@ -116,7 +128,7 @@ class AuthCubit extends Cubit<AuthState> {
       await _authService.logout();
     } catch (_) {}
     
-    await _storageService.deleteTokens();
+    await _storageService.clearAll();
     await _tokenService.clear();
     emit(AuthUnauthenticated());
   }

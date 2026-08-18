@@ -1,4 +1,3 @@
-import '../../../core/api_client.dart';
 
 class ProdutosRepository {
   ProdutosRepository();

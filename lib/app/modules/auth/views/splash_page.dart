@@ -21,11 +21,16 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _startApp() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-
+    // Garantir tempo mínimo de splash
+    final startTime = DateTime.now();
+    
     await context.read<OnboardingCubit>().checkOnboarding();
     await context.read<AuthCubit>().checkAuthStatus();
+    
+    final elapsed = DateTime.now().difference(startTime);
+    if (elapsed.inMilliseconds < 1500) {
+      await Future.delayed(Duration(milliseconds: 1500 - elapsed.inMilliseconds));
+    }
     
     _checkNavigation();
   }
@@ -34,16 +39,12 @@ class _SplashPageState extends State<SplashPage> {
     if (!mounted) return;
 
     final authState = context.read<AuthCubit>().state;
-    
-    if (authState is AuthAuthenticated || authState is AuthUnauthenticated || authState is AuthError) {
-      _navigate(authState);
-    }
-  }
-
-  void _navigate(AuthState authState) {
-    if (!mounted) return;
-
     final onboardingState = context.read<OnboardingCubit>().state;
+
+    // Só navega se ambos saíram do estado inicial
+    if (onboardingState is OnboardingInitial || authState is AuthInitial) {
+      return;
+    }
 
     if (onboardingState is OnboardingNotSeen) {
       Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
@@ -58,12 +59,15 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthCubit, AuthState>(
-      listener: (context, state) {
-        if (state is AuthAuthenticated || state is AuthUnauthenticated || state is AuthError) {
-          _navigate(state);
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthCubit, AuthState>(
+          listener: (context, state) => _checkNavigation(),
+        ),
+        BlocListener<OnboardingCubit, OnboardingState>(
+          listener: (context, state) => _checkNavigation(),
+        ),
+      ],
       child: Scaffold(
         body: Container(
           width: double.infinity,

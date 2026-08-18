@@ -32,17 +32,12 @@ class _DashboardViewState extends State<DashboardView> {
     return ResponsiveScaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        leading: LayoutBuilder(
-          builder: (context, constraints) {
-            if (MediaQuery.of(context).size.width < 900) {
-              return IconButton(
+        leading: MediaQuery.of(context).size.width < 900
+            ? IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -50,10 +45,7 @@ class _DashboardViewState extends State<DashboardView> {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthCubit>().logout();
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.phoneInput, (route) => false);
-            },
+            onPressed: () => context.read<AuthCubit>().logout(),
           ),
         ],
       ),
@@ -91,6 +83,15 @@ class _DashboardViewState extends State<DashboardView> {
                     Icons.inventory,
                     Colors.orange,
                   ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.cardapio),
+                    icon: const Icon(Icons.restaurant_menu),
+                    label: const Text('GERENCIAR CARDÁPIO'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -102,27 +103,29 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withValues(alpha: 0.1),
-              child: Icon(icon, color: color),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 16),
-            Column(
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                Text(title, style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500)),
+                Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

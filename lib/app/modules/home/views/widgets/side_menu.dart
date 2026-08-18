@@ -87,23 +87,13 @@ class SideMenu extends StatelessWidget {
                     ),
                     _buildMenuItem(
                       context,
-                      icon: Icons.inventory,
-                      label: 'Estoque',
+                      icon: Icons.settings,
+                      label: 'Configurações',
                       index: 3,
                       isSelected: currentIndex == 3,
                     ),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.settings,
-                      label: 'Configurações',
-                      index: 4,
-                      isSelected: currentIndex == 4,
-                    ),
                     
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Divider(),
-                    ),
+                    const SizedBox(height: 16),
                     
                     ListTile(
                       leading: const Icon(Icons.logout, color: Colors.redAccent),

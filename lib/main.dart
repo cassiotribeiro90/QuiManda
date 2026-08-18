@@ -3,11 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app/core/theme.dart';
 import 'app/di/dependencies.dart';
 import 'app/modules/auth/cubit/auth_cubit.dart';
+import 'app/modules/auth/cubit/auth_state.dart';
 import 'app/modules/dashboard/cubit/dashboard_cubit.dart';
 import 'app/modules/pedidos/cubit/pedidos_cubit.dart';
 import 'app/modules/produtos/cubit/produtos_cubit.dart';
 import 'app/modules/loja/cubit/loja_cubit.dart';
+import 'app/modules/cardapio/bloc/cardapio_cubit.dart';
 import 'app/modules/onboarding/bloc/onboarding_cubit.dart';
+import 'app/modules/configuracoes/bloc/configuracoes_cubit.dart';
 import 'app/routes/app_routes.dart';
 
 import 'app/modules/home/cubit/home_cubit.dart';
@@ -32,7 +35,9 @@ class QuiMandaApp extends StatelessWidget {
         BlocProvider<DashboardCubit>(create: (context) => getIt<DashboardCubit>()),
         BlocProvider<PedidosCubit>(create: (context) => getIt<PedidosCubit>()),
         BlocProvider<ProdutosCubit>(create: (context) => getIt<ProdutosCubit>()),
+        BlocProvider<CardapioCubit>(create: (context) => getIt<CardapioCubit>()),
         BlocProvider<LojaCubit>(create: (context) => getIt<LojaCubit>()),
+        BlocProvider<ConfiguracoesCubit>(create: (context) => getIt<ConfiguracoesCubit>()),
       ],
       child: MaterialApp(
         title: 'QuiManda',
@@ -41,6 +46,20 @@ class QuiMandaApp extends StatelessWidget {
         navigatorKey: ApiClient.navigatorKey,
         initialRoute: AppRoutes.splash,
         routes: AppRoutes.routes,
+        builder: (context, child) {
+          return BlocListener<AuthCubit, AuthState>(
+            listener: (context, state) {
+              if (state is AuthUnauthenticated) {
+                // Redireciona para a tela inicial de autenticação
+                ApiClient.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  AppRoutes.phoneInput,
+                  (route) => false,
+                );
+              }
+            },
+            child: child!,
+          );
+        },
       ),
     );
   }
