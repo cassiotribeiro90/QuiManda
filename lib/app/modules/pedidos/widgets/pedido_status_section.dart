@@ -1,5 +1,5 @@
-// lib/app/modules/pedidos/widgets/pedido_status_section.dart
 import 'package:flutter/material.dart';
+import '../../../core/app_theme.dart';
 import '../model/pedido_model.dart';
 import 'pedido_card_widget.dart';
 
@@ -25,21 +25,21 @@ class PedidoStatusSection extends StatelessWidget {
 
   Color get _corStatus {
     switch (status) {
-      case 'novo': return Colors.red;
-      case 'em_preparo': return Colors.orange;
-      case 'pronto': return Colors.green;
-      case 'saiu': return Colors.blue;
+      case 'novo': return AppTheme.primaryColor;
+      case 'em_preparo': return AppTheme.warningColor;
+      case 'pronto': return AppTheme.successColor;
+      case 'saiu': return AppTheme.infoColor;
       default: return Colors.grey;
     }
   }
 
   IconData get _iconeStatus {
     switch (status) {
-      case 'novo': return Icons.notifications_active;
-      case 'em_preparo': return Icons.timer;
-      case 'pronto': return Icons.check_circle;
-      case 'saiu': return Icons.delivery_dining;
-      default: return Icons.circle;
+      case 'novo': return Icons.notifications_outlined;
+      case 'em_preparo': return Icons.timer_outlined;
+      case 'pronto': return Icons.check_circle_outline;
+      case 'saiu': return Icons.delivery_dining_outlined;
+      default: return Icons.circle_outlined;
     }
   }
 
@@ -48,7 +48,6 @@ class PedidoStatusSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔥 Cabeçalho da seção
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
@@ -58,22 +57,23 @@ class PedidoStatusSection extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _corStatus.withValues(alpha: 0.15),
+                  color: _corStatus.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '$total',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: _corStatus,
                   ),
                 ),
@@ -81,7 +81,6 @@ class PedidoStatusSection extends StatelessWidget {
             ],
           ),
         ),
-        // 🔥 Lista de pedidos da seção
         ...pedidos.map((pedido) => PedidoCardWidget(
           pedido: pedido,
           onTap: () => onCardTap(pedido),

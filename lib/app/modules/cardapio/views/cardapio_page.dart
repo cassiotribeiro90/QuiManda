@@ -128,12 +128,7 @@ class _CardapioListViewState extends State<CardapioListView> {
                       padding: const EdgeInsets.fromLTRB(8, 32, 16, 12),
                       child: Text(
                         key.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
-                          letterSpacing: 1.2,
-                        ),
+                        style: AppTextStyles.label,
                       ),
                     );
                   }
@@ -170,7 +165,7 @@ class _CardapioListViewState extends State<CardapioListView> {
           const SizedBox(height: 16),
           Text(
             'Seu cardápio está vazio',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold),
+            style: AppTextStyles.titleSmall,
           ),
           const SizedBox(height: 8),
           const Text('Comece adicionando seu primeiro produto!'),
@@ -193,7 +188,7 @@ class _CardapioListViewState extends State<CardapioListView> {
           const SizedBox(height: 16),
           const Text(
             'Não foi possível carregar o cardápio',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: AppTextStyles.titleSmall,
           ),
           const SizedBox(height: 8),
           Padding(

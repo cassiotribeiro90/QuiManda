@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'app/core/theme.dart';
+import 'app/core/app_theme.dart';
 import 'app/di/dependencies.dart';
 import 'app/modules/auth/cubit/auth_cubit.dart';
 import 'app/modules/auth/cubit/auth_state.dart';

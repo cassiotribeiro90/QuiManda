@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../dashboard/views/dashboard_screen.dart';
 import '../cubit/home_cubit.dart';
-import '../../dashboard/views/dashboard_view.dart';
 import '../../pedidos/views/pedidos_list_page.dart';
 import '../../cardapio/views/cardapio_page.dart';
 import '../../configuracoes/views/configuracoes_loja_page.dart';
@@ -20,7 +20,7 @@ class _HomeViewState extends State<HomeView> {
   static const double kDesktopBreakpoint = 900.0;
 
   final List<Widget> _pages = [
-    const DashboardView(),
+    const DashboardScreen(),
     const PedidosListPage(),
     const CardapioPage(),
     const ConfiguracoesLojaPage(),
