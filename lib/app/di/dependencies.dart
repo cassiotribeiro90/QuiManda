@@ -44,8 +44,9 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<AuthService>(() => AuthService(getIt<ApiClient>()));
   getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>(), getIt<TokenService>(), getIt<StorageService>()));
 
+
   // Dashboard
-  getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository());
+  getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository(getIt<ApiClient>()));
   getIt.registerLazySingleton<DashboardService>(() => DashboardService(getIt<DashboardRepository>()));
   getIt.registerFactory<DashboardCubit>(() => DashboardCubit(getIt<DashboardService>()));
 

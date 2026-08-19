@@ -25,7 +25,8 @@ class DashboardLists extends StatelessWidget {
           child: _buildCard(
             isDark,
             title: 'Top Produtos',
-            child: _buildList(isDark, topProdutos, 'nome', 'vendas'),
+            subtitle: 'Mais vendidos',
+            child: _buildTopProdutos(isDark),
           ),
         ),
         const SizedBox(width: 12),
@@ -33,14 +34,24 @@ class DashboardLists extends StatelessWidget {
           child: _buildCard(
             isDark,
             title: 'Top Clientes',
-            child: _buildList(isDark, topClientes, 'nome', 'total_pedidos'),
+            subtitle: 'Mais fiéis',
+            child: _buildTopClientes(isDark),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildCard(
+            isDark,
+            title: 'Satisfação',
+            subtitle: 'Avaliações',
+            child: _buildSatisfacao(isDark),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCard(bool isDark, {required String title, required Widget child}) {
+  Widget _buildCard(bool isDark, {required String title, required String subtitle, required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -52,6 +63,8 @@ class DashboardLists extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
           const SizedBox(height: 12),
           child,
         ],
@@ -59,21 +72,76 @@ class DashboardLists extends StatelessWidget {
     );
   }
 
-  Widget _buildList(bool isDark, List<dynamic> list, String keyLabel, String keyValue) {
-    if (list.isEmpty) return const Text('Nenhum dado disponível');
+  Widget _buildTopProdutos(bool isDark) {
+    if (topProdutos.isEmpty) {
+      return Text('Nenhum produto vendido hoje', style: TextStyle(fontSize: 12, color: Colors.grey.shade500));
+    }
+
     return Column(
-      children: list.take(5).map((item) {
+      children: topProdutos.take(5).map((produto) {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(item[keyLabel] ?? '', style: const TextStyle(fontSize: 12)),
-              Text('${item[keyValue] ?? 0}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              Expanded(
+                child: Text(
+                  produto['nome'] ?? '',
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade300 : Colors.black87),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text('${produto['vendas'] ?? 0}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildTopClientes(bool isDark) {
+    if (topClientes.isEmpty) {
+      return Text('Nenhum cliente ainda', style: TextStyle(fontSize: 12, color: Colors.grey.shade500));
+    }
+
+    return Column(
+      children: topClientes.take(5).map((cliente) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  cliente['nome'] ?? 'Sem nome',
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade300 : Colors.black87),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text('${cliente['total_pedidos'] ?? 0} pedidos', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSatisfacao(bool isDark) {
+    final percentual = satisfacao['percentual_positivo'] ?? 0;
+    final total = satisfacao['total'] ?? 0;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '$percentual%',
+          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green),
+        ),
+        const SizedBox(height: 4),
+        Text('Avaliações positivas', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        const SizedBox(height: 8),
+        Text('$total avaliações', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade300 : Colors.black87)),
+      ],
     );
   }
 }

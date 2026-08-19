@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/produto_model.dart';
-import '../models/categoria.dart';
 import '../models/subcategoria.dart';
 import '../repositories/cardapio_repository.dart';
 import 'cardapio_state.dart';

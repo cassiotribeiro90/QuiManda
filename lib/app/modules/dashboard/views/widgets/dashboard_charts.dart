@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class DashboardCharts extends StatelessWidget {
   final List<dynamic> pedidosPorDia;
@@ -21,35 +20,25 @@ class DashboardCharts extends StatelessWidget {
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: _buildCard(
-                isDark,
-                title: 'Pedidos por Dia',
-                height: 280,
-                child: const Center(child: Text('Gráfico de barras pendente')),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildCard(
-                isDark,
-                title: 'Faturamento Mensal',
-                height: 280,
-                child: const Center(child: Text('Gráfico de linha pendente')),
-              ),
-            ),
-          ],
+        _buildCard(
+          isDark,
+          title: 'Pedidos por Status',
+          subtitle: 'Distribuição atual',
+          child: _buildStatusList(isDark),
+        ),
+        const SizedBox(height: 12),
+        _buildCard(
+          isDark,
+          title: 'Formas de Pagamento',
+          subtitle: 'Distribuição',
+          child: _buildPaymentList(isDark),
         ),
       ],
     );
   }
 
-  Widget _buildCard(bool isDark, {required String title, required double height, required Widget child}) {
+  Widget _buildCard(bool isDark, {required String title, required String subtitle, required Widget child}) {
     return Container(
-      height: height,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey.shade900 : Colors.white,
@@ -60,10 +49,68 @@ class DashboardCharts extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
           const SizedBox(height: 12),
-          Expanded(child: child),
+          child,
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusList(bool isDark) {
+    if (pedidosPorStatus.isEmpty) {
+      return Text('Nenhum pedido ainda', style: TextStyle(fontSize: 12, color: Colors.grey.shade500));
+    }
+
+    final total = pedidosPorStatus.fold<int>(0, (sum, item) => sum + ((item['total'] ?? 0) as int));
+
+    return Column(
+      children: pedidosPorStatus.map((item) {
+        final valor = item['total'] ?? 0;
+        final percent = total > 0 ? (valor / total) * 100 : 0.0;
+        final label = item['status'] ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(label, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade300 : Colors.black87)),
+              ),
+              Text('$valor (${percent.toStringAsFixed(1)}%)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildPaymentList(bool isDark) {
+    if (pedidosPorPagamento.isEmpty) {
+      return Text('Nenhum pagamento ainda', style: TextStyle(fontSize: 12, color: Colors.grey.shade500));
+    }
+
+    final total = pedidosPorPagamento.fold<int>(0, (sum, item) => sum + ((item['total'] ?? 0) as int));
+
+    return Column(
+      children: pedidosPorPagamento.map((item) {
+        final valor = item['total'] ?? 0;
+        final percent = total > 0 ? (valor / total) * 100 : 0.0;
+        final label = item['forma_pagamento'] ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(label, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade300 : Colors.black87)),
+              ),
+              Text('${percent.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

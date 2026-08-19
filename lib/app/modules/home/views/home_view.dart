@@ -19,12 +19,20 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   static const double kDesktopBreakpoint = 900.0;
 
-  final List<Widget> _pages = [
-    const DashboardScreen(),
-    const PedidosListPage(),
-    const CardapioPage(),
-    const ConfiguracoesLojaPage(),
-  ];
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return const DashboardScreen();
+      case 1:
+        return const PedidosListPage();
+      case 2:
+        return const CardapioPage();
+      case 3:
+        return const ConfiguracoesLojaPage();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +55,7 @@ class _HomeViewState extends State<HomeView> {
                     const SideMenu(),
                     const VerticalDivider(thickness: 1, width: 1),
                     Expanded(
-                      child: IndexedStack(
-                        index: currentIndex,
-                        children: _pages,
-                      ),
+                      child: _buildPage(currentIndex),
                     ),
                   ],
                 ),
@@ -63,10 +68,7 @@ class _HomeViewState extends State<HomeView> {
               drawer: const Drawer(
                 child: SideMenu(isDrawer: true),
               ),
-              body: IndexedStack(
-                index: currentIndex,
-                children: _pages,
-              ),
+              body: _buildPage(currentIndex),
             );
           },
         );

@@ -1,14 +1,18 @@
+import '../../../core/api_client.dart';
+import '../../../core/app_config.dart';
 
 class DashboardRepository {
-  DashboardRepository();
+  final ApiClient _apiClient;
 
-  Future<Map<String, dynamic>> getStats() async {
-    // Mocking response
-    await Future.delayed(const Duration(milliseconds: 500));
-    return {
-      'totalPedidos': 15,
-      'faturamento': 1250.50,
-      'produtosAtivos': 42
-    };
+  DashboardRepository(this._apiClient);
+
+  Future<Map<String, dynamic>> fetchDashboard() async {
+    final response = await _apiClient.get(AppConfig.DASHBOARD);
+
+    if (response.data['success'] == true) {
+      return response.data['data'] as Map<String, dynamic>;
+    }
+
+    throw Exception(response.data['message'] ?? 'Erro ao carregar dashboard');
   }
 }

@@ -46,11 +46,8 @@ class DashboardKpis extends StatelessWidget {
       ),
     ];
 
-    final width = MediaQuery.of(context).size.width;
-    final crossAxisCount = width > 1200 ? 4 : (width > 600 ? 2 : 2);
-
     return GridView.count(
-      crossAxisCount: crossAxisCount,
+      crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
@@ -124,6 +121,18 @@ class _KpiCard extends StatelessWidget {
                 fontSize: 10,
                 color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Flexible(
+            child: Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 8,
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
