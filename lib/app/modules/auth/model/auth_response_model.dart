@@ -1,4 +1,5 @@
 import 'lojista_model.dart';
+import 'loja_model.dart';
 
 class AuthResponse {
   final bool success;
@@ -8,6 +9,7 @@ class AuthResponse {
   final int? expiresIn;
   final String? tokenType;
   final LojistaModel? lojista;
+  final List<LojaModel> lojas;
 
   AuthResponse({
     required this.success,
@@ -17,6 +19,7 @@ class AuthResponse {
     this.expiresIn,
     this.tokenType,
     this.lojista,
+    this.lojas = const [],
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -31,6 +34,9 @@ class AuthResponse {
       lojista: data['lojista'] != null 
           ? LojistaModel.fromJson(data['lojista']) 
           : null,
+      lojas: (data['lojas'] as List<dynamic>?)
+          ?.map((e) => LojaModel.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 

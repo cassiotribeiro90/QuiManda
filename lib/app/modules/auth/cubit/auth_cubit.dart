@@ -6,6 +6,10 @@ import '../model/lojista_model.dart';
 import '../../../services/token_service.dart';
 import '../../../core/services/storage_service.dart';
 
+import '../../../di/dependencies.dart';
+import '../../store/bloc/store_cubit.dart';
+import '../model/auth_response_model.dart';
+
 class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
   final TokenService _tokenService;
@@ -19,6 +23,8 @@ class AuthCubit extends Cubit<AuthState> {
       final lojistaData = _tokenService.getLojistaData();
       if (lojistaData != null) {
         final lojista = LojistaModel.fromJson(lojistaData);
+        // Carrega as lojas antes de emitir autenticado
+        await getIt<StoreCubit>().loadStores();
         emit(AuthAuthenticated(lojista, token));
       } else {
         // Token existe mas dados da loja não. Busca do servidor.
@@ -40,6 +46,10 @@ class AuthCubit extends Cubit<AuthState> {
           final lojista = LojistaModel.fromJson(data['lojista']);
           // Salva localmente para a próxima vez
           await _tokenService.saveLojista(data['lojista']);
+          
+          final authData = AuthResponse.fromJson(response);
+          await getIt<StoreCubit>().updateStores(authData.lojas);
+          
           emit(AuthAuthenticated(lojista, token));
           return;
         }
@@ -72,26 +82,35 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> verifyOtp(String telefone, String codigo) async {
     emit(AuthOtpVerifying());
     try {
+      print('[AUTH_CUBIT] Verificando OTP para $telefone');
       final telLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
       final response = await _authService.verifyOtp(telLimpo, codigo);
       
       if (response['success'] == true) {
-        final data = response['data'];
-        final token = data['access_token'] as String;
-        final refreshToken = data['refresh_token'] as String;
-        final lojista = LojistaModel.fromJson(data['lojista']);
+        print('[AUTH_CUBIT] OTP verificado com sucesso');
+        final authData = AuthResponse.fromJson(response);
+        final token = authData.accessToken!;
+        final refreshToken = authData.refreshToken!;
+        final lojista = authData.lojista!;
 
         await _storageService.saveToken(token);
         await _storageService.saveRefreshToken(refreshToken);
-        await _storageService.saveUserData(data['lojista']);
+        await _storageService.saveUserData(response['data']['lojista']);
         await _tokenService.saveTokens(token, refreshToken);
-        await _tokenService.saveLojista(data['lojista']);
+        await _tokenService.saveLojista(response['data']['lojista']);
+
+        print('[AUTH_CUBIT] Dados de autenticação salvos. Lojas recebidas: ${authData.lojas.length}');
+
+        // 🔥 ATUALIZA AS LOJAS NO CUBIT
+        await getIt<StoreCubit>().updateStores(authData.lojas);
 
         emit(AuthAuthenticated(lojista, token));
       } else {
+        print('[AUTH_CUBIT] Erro na verificação do OTP: ${response['message']}');
         emit(AuthError(response['message'] ?? 'Código inválido'));
       }
     } catch (e) {
+      print('[AUTH_CUBIT] Exceção no verifyOtp: $e');
       emit(AuthError(e.toString()));
     }
   }
@@ -99,26 +118,35 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> login(String email, String senha) async {
     emit(AuthLoading());
     try {
+      print('[AUTH_CUBIT] Tentando login para $email');
       final response = await _authService.login(email, senha);
       if (response['success'] == true) {
-        final data = response['data'];
-        final token = data['access_token'] as String;
-        final refreshToken = data['refresh_token'] as String?;
-        final lojista = LojistaModel.fromJson(data['lojista']);
+        print('[AUTH_CUBIT] Login bem-sucedido');
+        final authData = AuthResponse.fromJson(response);
+        final token = authData.accessToken!;
+        final refreshToken = authData.refreshToken;
+        final lojista = authData.lojista!;
 
         await _storageService.saveToken(token);
         if (refreshToken != null) {
           await _storageService.saveRefreshToken(refreshToken);
         }
-        await _storageService.saveUserData(data['lojista']);
+        await _storageService.saveUserData(response['data']['lojista']);
         await _tokenService.saveTokens(token, refreshToken ?? '');
-        await _tokenService.saveLojista(data['lojista']);
+        await _tokenService.saveLojista(response['data']['lojista']);
+
+        print('[AUTH_CUBIT] Dados de login salvos. Lojas recebidas: ${authData.lojas.length}');
+
+        // 🔥 ATUALIZA AS LOJAS NO CUBIT
+        await getIt<StoreCubit>().updateStores(authData.lojas);
 
         emit(AuthAuthenticated(lojista, token));
       } else {
+        print('[AUTH_CUBIT] Falha no login: ${response['message']}');
         emit(AuthError(response['message'] ?? 'Email ou senha inválidos'));
       }
     } catch (e) {
+      print('[AUTH_CUBIT] Exceção no login: $e');
       emit(AuthError(e.toString()));
     }
   }
@@ -130,6 +158,7 @@ class AuthCubit extends Cubit<AuthState> {
     
     await _storageService.clearAll();
     await _tokenService.clear();
+    await getIt<StoreCubit>().clear();
     emit(AuthUnauthenticated());
   }
 }

@@ -8,6 +8,8 @@ import '../modules/cardapio/views/cardapio_page.dart';
 import '../modules/cardapio/views/formulario_produto_page.dart';
 import '../modules/configuracoes/views/configuracoes_loja_page.dart';
 
+import '../modules/store/views/store_selection_page.dart';
+
 class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
@@ -17,6 +19,7 @@ class AppRoutes {
   static const String cardapio = '/cardapio';
   static const String formularioProduto = '/formulario-produto';
   static const String configuracoes = '/configuracoes';
+  static const String storeSelection = '/store-selection';
 
   static Map<String, WidgetBuilder> get routes => {
     splash: (context) => const SplashPage(),
@@ -36,5 +39,6 @@ class AppRoutes {
       return const FormularioProdutoPage();
     },
     configuracoes: (context) => const ConfiguracoesLojaPage(),
+    storeSelection: (context) => const StoreSelectionPage(),
   };
 }

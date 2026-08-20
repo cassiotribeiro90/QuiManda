@@ -25,6 +25,9 @@ import '../modules/onboarding/bloc/onboarding_cubit.dart';
 import '../modules/configuracoes/services/loja_service.dart' as config_service;
 import '../modules/configuracoes/bloc/configuracoes_cubit.dart';
 
+import '../core/storage/store_storage.dart';
+import '../modules/store/bloc/store_cubit.dart';
+
 final getIt = GetIt.instance;
 
 Future<void> setupDependencies() async {
@@ -34,8 +37,14 @@ Future<void> setupDependencies() async {
   // Services
   getIt.registerLazySingleton<StorageService>(() => StorageService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
+  getIt.registerLazySingleton<StoreStorage>(() => StoreStorage(getIt<SharedPreferences>()));
   
-  getIt.registerLazySingleton<ApiClient>(() => ApiClient(getIt<TokenService>()));
+  getIt.registerLazySingleton<StoreCubit>(() => StoreCubit(getIt<StoreStorage>()));
+
+  getIt.registerLazySingleton<ApiClient>(() => ApiClient(
+    getIt<TokenService>(),
+    getIt<StoreStorage>(),
+  ));
 
   // Home
   getIt.registerFactory<HomeCubit>(() => HomeCubit());

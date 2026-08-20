@@ -6,6 +6,9 @@ import '../../onboarding/bloc/onboarding_cubit.dart';
 import '../../onboarding/bloc/onboarding_state.dart';
 import '../../../routes/app_routes.dart';
 
+import '../../store/bloc/store_cubit.dart';
+import '../../store/bloc/store_state.dart';
+
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -40,18 +43,35 @@ class _SplashPageState extends State<SplashPage> {
 
     final authState = context.read<AuthCubit>().state;
     final onboardingState = context.read<OnboardingCubit>().state;
+    final storeState = context.read<StoreCubit>().state;
+
+    print('[SPLASH] Verificando navegação: Auth=$authState, Onboarding=$onboardingState, Store=$storeState');
 
     // Só navega se ambos saíram do estado inicial
-    if (onboardingState is OnboardingInitial || authState is AuthInitial) {
+    if (onboardingState is OnboardingInitial || authState is AuthInitial || storeState is StoreInitial) {
       return;
     }
 
     if (onboardingState is OnboardingNotSeen) {
+      print('[SPLASH] Onboarding não visto, redirecionando');
       Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
     } else {
       if (authState is AuthAuthenticated) {
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        if (storeState is StoreLoaded) {
+          print('[SPLASH] Autenticado com ${storeState.stores.length} lojas');
+          if (storeState.hasMultipleStores) {
+            print('[SPLASH] Múltiplas lojas detectadas, forçando seleção');
+            Navigator.pushReplacementNamed(context, AppRoutes.storeSelection);
+          } else {
+            print('[SPLASH] Apenas uma loja, indo para Dashboard');
+            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          }
+        } else {
+          print('[SPLASH] Autenticado mas sem lojas carregadas, indo para Dashboard');
+          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        }
       } else {
+        print('[SPLASH] Não autenticado, indo para PhoneInput');
         Navigator.pushReplacementNamed(context, AppRoutes.phoneInput);
       }
     }

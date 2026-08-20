@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../routes/app_routes.dart';
 import '../../../auth/cubit/auth_cubit.dart';
+import '../../../store/bloc/store_cubit.dart';
+import '../../../store/bloc/store_state.dart';
 import '../../cubit/home_cubit.dart';
+
 
 class SideMenu extends StatelessWidget {
   final bool isDrawer;
@@ -18,38 +22,54 @@ class SideMenu extends StatelessWidget {
       child: Column(
         children: [
           // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [theme.primaryColor, theme.primaryColor.withValues(alpha: 0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.delivery_dining, size: 48, color: Colors.white),
-                SizedBox(height: 12),
-                Text(
-                  'QuiManda',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+          BlocBuilder<StoreCubit, StoreState>(
+            builder: (context, state) {
+              String storeName = 'QuiManda';
+              String storeAddress = 'Painel do Lojista';
+              
+              if (state is StoreLoaded) {
+                storeName = state.selectedStore.nome;
+                storeAddress = state.selectedStore.cidade ?? 'Painel do Lojista';
+              }
+
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [theme.primaryColor, theme.primaryColor.withValues(alpha: 0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                Text(
-                  'Painel do Lojista',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.delivery_dining, size: 48, color: Colors.white),
+                    const SizedBox(height: 12),
+                    Text(
+                      storeName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      storeAddress,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           
           // Menu Items
@@ -93,8 +113,30 @@ class SideMenu extends StatelessWidget {
                       isSelected: currentIndex == 3,
                     ),
                     
-                    const SizedBox(height: 16),
+                    const Divider(),
                     
+                    BlocBuilder<StoreCubit, StoreState>(
+                      builder: (context, storeState) {
+                        if (storeState is StoreLoaded && storeState.hasMultipleStores) {
+                          return ListTile(
+                            leading: const Icon(Icons.storefront, color: Colors.blue),
+                            title: const Text(
+                              'Trocar Loja',
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            onTap: () {
+                              print('[UI_NAV] Abrindo seleção de lojas pelo menu');
+                              if (isDrawer) {
+                                Navigator.pop(context);
+                              }
+                              Navigator.pushNamed(context, AppRoutes.storeSelection);
+                            },
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+
                     ListTile(
                       leading: const Icon(Icons.logout, color: Colors.redAccent),
                       title: const Text(

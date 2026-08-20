@@ -6,6 +6,9 @@ import '../../../routes/app_routes.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../core/theme/app_text_styles.dart';
 
+import '../../store/bloc/store_cubit.dart';
+import '../../store/bloc/store_state.dart';
+
 class OtpVerificationPage extends StatefulWidget {
   final String telefone;
   const OtpVerificationPage({super.key, required this.telefone});
@@ -23,6 +26,25 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     super.dispose();
   }
 
+  void _handleNavigation() {
+    final storeState = context.read<StoreCubit>().state;
+    print('[UI_NAV] Tratando navegação pós-login. Estado da loja: $storeState');
+    
+    if (storeState is StoreLoaded) {
+      print('[UI_NAV] Lojista possui ${storeState.stores.length} lojas');
+      if (storeState.hasMultipleStores) {
+        print('[UI_NAV] Redirecionando para seleção de lojas');
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.storeSelection, (route) => false);
+      } else {
+        print('[UI_NAV] Apenas uma loja, indo para Dashboard');
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (route) => false);
+      }
+    } else {
+      print('[UI_NAV] Estado da loja não carregado, indo para Dashboard por padrão');
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (route) => false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
@@ -30,7 +52,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (route) => false);
+            _handleNavigation();
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),

@@ -1,43 +1,56 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import '../services/token_service.dart';
 import 'interceptors/refresh_interceptor.dart';
 import 'constants.dart';
+import 'storage/store_storage.dart';
 
 class ApiClient {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   
   late final Dio dio;
   final TokenService _tokenService;
+  final StoreStorage _storeStorage;
 
-  ApiClient(this._tokenService) {
+  ApiClient(this._tokenService, this._storeStorage) {
     dio = Dio(BaseOptions(
       baseUrl: AppConstants.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
       },
     ));
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // 🔥 ADICIONA O HEADER DE AUTENTICAÇÃO
         final token = _tokenService.getAccessToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
 
-        // 🔥 LOG DETALHADO DA REQUISIÇÃO
-        debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        debugPrint('📤 [ApiClient] ENVIANDO REQUISIÇÃO');
-        debugPrint('📤 URL: ${options.baseUrl}${options.path}');
-        debugPrint('📤 Método: ${options.method}');
-        debugPrint('📤 Headers: ${options.headers}');
-        if (options.data != null) {
-          debugPrint('📤 Body: ${options.data}');
+        // 🔥 ADICIONA O HEADER X-Store-Id (LENDO DIRETAMENTE DO STORAGE)
+        final storeId = _storeStorage.getSelectedStoreId();
+        if (storeId != null) {
+          options.headers['X-Store-Id'] = storeId.toString();
         }
-        debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        // LOG PARA DEPURAÇÃO
+        if (kDebugMode) {
+          debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          debugPrint('📤 [ApiClient] ENVIANDO REQUISIÇÃO');
+          debugPrint('📤 URL: ${options.baseUrl}${options.path}');
+          debugPrint('📤 Método: ${options.method}');
+          debugPrint('📤 Headers: ${options.headers}');
+          if (options.data != null) {
+            debugPrint('📤 Body: ${options.data}');
+          }
+          debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        }
 
         return handler.next(options);
       },

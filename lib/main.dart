@@ -11,6 +11,7 @@ import 'app/modules/loja/cubit/loja_cubit.dart';
 import 'app/modules/cardapio/bloc/cardapio_cubit.dart';
 import 'app/modules/onboarding/bloc/onboarding_cubit.dart';
 import 'app/modules/configuracoes/bloc/configuracoes_cubit.dart';
+import 'app/modules/store/bloc/store_cubit.dart';
 import 'app/routes/app_routes.dart';
 
 import 'app/modules/home/cubit/home_cubit.dart';
@@ -31,6 +32,7 @@ class QuiMandaApp extends StatelessWidget {
       providers: [
         BlocProvider<OnboardingCubit>(create: (context) => getIt<OnboardingCubit>()..checkOnboarding()),
         BlocProvider<AuthCubit>(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
+        BlocProvider<StoreCubit>(create: (context) => getIt<StoreCubit>()..loadStores()),
         BlocProvider<HomeCubit>(create: (context) => getIt<HomeCubit>()),
         BlocProvider<DashboardCubit>(create: (context) => getIt<DashboardCubit>()),
         BlocProvider<PedidosCubit>(create: (context) => getIt<PedidosCubit>()),
