@@ -46,11 +46,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
                   const SizedBox(height: 12),
-                  Text(state.message, textAlign: TextAlign.center),
+                  Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.read<DashboardCubit>().loadDashboard(),
-                    child: const Text('Tentar novamente'),
+                    child: const Text('Tentar novamente', style: const TextStyle(fontSize: 16)),
                   ),
                 ],
               ),
@@ -76,14 +80,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final horariosPico = dados['horarios_pico'] ?? [];
     final satisfacao = dados['satisfacao'] ?? {};
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return ResponsiveScaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         leading: MediaQuery.of(context).size.width < 900
             ? IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-              )
+          icon: const Icon(Icons.menu),
+          onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
+        )
             : null,
       ),
       body: RefreshIndicator(
@@ -92,48 +98,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
           await Future.delayed(const Duration(milliseconds: 500));
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ... conteúdo que estava no Row
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 8, color: Colors.green.shade600),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Sua loja',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
+              // Cabeçalho com badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Visão Geral',
+                    style: TextStyle(
+                      fontSize: isMobile ? 22 : 26,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
-                  ],
-                ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.circle, size: 10, color: Colors.green.shade600),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Sua loja',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              DashboardKpis(kpis: kpis),
               const SizedBox(height: 24),
+              DashboardKpis(kpis: kpis, isMobile: isMobile),
+              const SizedBox(height: 28),
               DashboardCharts(
                 pedidosPorDia: pedidosPorDia,
                 faturamentoPorMes: faturamentoPorMes,
                 pedidosPorStatus: pedidosPorStatus,
                 pedidosPorPagamento: pedidosPorPagamento,
+                isMobile: isMobile,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               DashboardLists(
                 topProdutos: topProdutos,
                 topClientes: topClientes,
                 horariosPico: horariosPico,
                 satisfacao: satisfacao,
+                isMobile: isMobile,
               ),
             ],
           ),
