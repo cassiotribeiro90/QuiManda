@@ -4,6 +4,7 @@ import '../repository/pedidos_repository.dart';
 
 class PedidosCubit extends Cubit<PedidosState> {
   final PedidoRepository _repository;
+  int? _currentStoreId; // 🔥 Armazena o ID da loja atual
 
   // 🔥 Manter o estado atual para fazer merge
   PedidosLoaded? _currentLoadedState;
@@ -45,6 +46,21 @@ class PedidosCubit extends Cubit<PedidosState> {
         emit(_currentLoadedState!.copyWith(isLoading: false));
       }
     }
+  }
+
+  // 🔥 CARREGAR PEDIDOS COM VERIFICAÇÃO DE LOJA
+  Future<void> loadPedidosAtivosWithStoreCheck(int storeId) async {
+    // Se a loja mudou, recarrega
+    if (_currentStoreId != storeId) {
+      _currentStoreId = storeId;
+      await carregarPedidosAtivos();
+    }
+  }
+
+  // 🔥 FORÇAR RECARREGAMENTO (usado quando a loja muda)
+  Future<void> reloadForStoreChange() async {
+    _currentStoreId = null; // Reseta para forçar recarregamento
+    await carregarPedidosAtivos();
   }
 
   // 🔥 Refresh silencioso (background)

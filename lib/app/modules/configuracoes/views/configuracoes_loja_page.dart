@@ -106,10 +106,13 @@ class _ConfiguracoesLojaPageState extends State<ConfiguracoesLojaPage> {
         if (isLoading) {
           return ResponsiveScaffold(
             appBar: AppBar(
-              title: const Text('Configurações'),
+              title: const Text('Configurações', style: TextStyle(color: Colors.white)),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              automaticallyImplyLeading: false,
               leading: MediaQuery.of(context).size.width < 900
                   ? IconButton(
-                      icon: const Icon(Icons.menu),
+                      icon: const Icon(Icons.menu, color: Colors.white),
                       onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
                     )
                   : null,
@@ -121,10 +124,13 @@ class _ConfiguracoesLojaPageState extends State<ConfiguracoesLojaPage> {
         if (state is ConfiguracoesError && !_isDataLoaded) {
           return ResponsiveScaffold(
             appBar: AppBar(
-              title: const Text('Configurações'),
+              title: const Text('Configurações', style: TextStyle(color: Colors.white)),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              automaticallyImplyLeading: false,
               leading: MediaQuery.of(context).size.width < 900
                   ? IconButton(
-                      icon: const Icon(Icons.menu),
+                      icon: const Icon(Icons.menu, color: Colors.white),
                       onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
                     )
                   : null,
@@ -159,10 +165,13 @@ class _ConfiguracoesLojaPageState extends State<ConfiguracoesLojaPage> {
         return ResponsiveScaffold(
           maxWidth: 800,
           appBar: AppBar(
-            title: const Text('Configurações da Loja'),
+            title: const Text('Configurações da Loja', style: TextStyle(color: Colors.white)),
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            automaticallyImplyLeading: false,
             leading: MediaQuery.of(context).size.width < 900
                 ? IconButton(
-                    icon: const Icon(Icons.menu),
+                    icon: const Icon(Icons.menu, color: Colors.white),
                     onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
                   )
                 : null,

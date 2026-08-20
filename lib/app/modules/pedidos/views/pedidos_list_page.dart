@@ -92,9 +92,12 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
-            const Text('Pedidos'),
+            const Text('Pedidos', style: TextStyle(color: Colors.white)),
             const SizedBox(width: 8),
             BlocBuilder<PedidosCubit, PedidosState>(
               builder: (context, state) {
@@ -122,7 +125,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
         ),
         leading: MediaQuery.of(context).size.width < 900
             ? IconButton(
-                icon: const Icon(Icons.menu),
+                icon: const Icon(Icons.menu, color: Colors.white),
                 onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
               )
             : null,

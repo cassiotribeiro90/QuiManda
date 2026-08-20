@@ -7,7 +7,7 @@ class DashboardRepository {
   DashboardRepository(this._apiClient);
 
   Future<Map<String, dynamic>> fetchDashboard() async {
-    final response = await _apiClient.get(AppConfig.DASHBOARD);
+    final response = await _apiClient.get(AppConfig.dashboard);
 
     if (response.data['success'] == true) {
       return response.data['data'] as Map<String, dynamic>;

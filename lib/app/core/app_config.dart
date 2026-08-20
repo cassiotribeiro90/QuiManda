@@ -21,5 +21,5 @@ class AppConfig {
     // Outros (iOS Simulator, Desktop, etc)
     return 'http://localhost:8001';
   }
-  static const String DASHBOARD = '/api/lojista/dashboard';
+  static const String dashboard = '/api/lojista/dashboard';
 }

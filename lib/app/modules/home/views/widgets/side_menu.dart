@@ -124,6 +124,10 @@ class SideMenu extends StatelessWidget {
                               'Trocar Loja',
                               style: TextStyle(fontWeight: FontWeight.w500),
                             ),
+                            subtitle: Text(
+                              'Atual: ${storeState.selectedStore.nome}',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
                             onTap: () {
                               print('[UI_NAV] Abrindo seleção de lojas pelo menu');
                               if (isDrawer) {

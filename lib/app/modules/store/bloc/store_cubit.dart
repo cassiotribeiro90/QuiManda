@@ -51,11 +51,36 @@ class StoreCubit extends Cubit<StoreState> {
     print('[STORE_CUBIT] selectStore chamado para ID: $storeId');
     if (state is! StoreLoaded) return;
     final currentState = state as StoreLoaded;
+    
+    // Se já é a loja selecionada, não faz nada
+    if (currentState.selectedStore.id == storeId) return;
+
     final store = currentState.stores.firstWhere((s) => s.id == storeId);
     
     await _storage.saveSelectedStoreId(storeId);
     print('[STORE_CUBIT] Nova loja selecionada: ${store.nome}');
-    emit(currentState.copyWith(selectedStore: store));
+    
+    // 🔥 EMITE O NOVO ESTADO COM A LOJA SELECIONADA E FLAG DE MUDANÇA
+    emit(currentState.copyWith(
+      selectedStore: store,
+      storeChanged: true,
+    ));
+
+    // 🔥 Pequeno delay para garantir que o estado foi atualizado e ouvido
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // 🔥 Volta a flag para false após a mudança
+    if (state is StoreLoaded) {
+      emit((state as StoreLoaded).copyWith(storeChanged: false));
+    }
+  }
+
+  // 🔥 VERIFICA SE A LOJA MUDOU (método auxiliar)
+  bool hasStoreChanged(StoreState previous, StoreState current) {
+    if (previous is StoreLoaded && current is StoreLoaded) {
+      return previous.selectedStore.id != current.selectedStore.id;
+    }
+    return false;
   }
 
   // Atualiza a lista de lojas (usado após login/refresh)

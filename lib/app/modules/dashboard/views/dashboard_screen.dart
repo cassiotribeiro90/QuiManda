@@ -84,10 +84,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return ResponsiveScaffold(
       appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        title: const Text('Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         leading: MediaQuery.of(context).size.width < 900
             ? IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
         )
             : null,
