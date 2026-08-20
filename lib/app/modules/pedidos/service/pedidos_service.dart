@@ -32,7 +32,6 @@ class PedidosService {
   // 🔥 Listar pedidos (com paginação e filtros)
   Future<Map<String, dynamic>> listar({
     String? status,
-    int? lojaId,
     String? dataInicio,
     String? dataFim,
     int page = 1,
@@ -43,7 +42,6 @@ class PedidosService {
       'per_page': perPage,
     };
     if (status != null && status.isNotEmpty) query['status'] = status;
-    if (lojaId != null) query['loja_id'] = lojaId;
     if (dataInicio != null && dataInicio.isNotEmpty) query['data_inicio'] = dataInicio;
     if (dataFim != null && dataFim.isNotEmpty) query['data_fim'] = dataFim;
 

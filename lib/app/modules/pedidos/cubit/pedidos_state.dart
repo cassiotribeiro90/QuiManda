@@ -63,6 +63,8 @@ class PedidosLoaded extends PedidosState {
     );
   }
 
+  bool get hasPedidos => grupos.any((g) => g.itens.isNotEmpty);
+
   @override
   List<Object?> get props => [grupos, totalPedidos, isLoading];
 }
@@ -72,34 +74,6 @@ class PedidosError extends PedidosState {
   const PedidosError(this.message);
   @override
   List<Object?> get props => [message];
-}
-
-class PedidoAceitando extends PedidosState {
-  final int pedidoId;
-  const PedidoAceitando(this.pedidoId);
-  @override
-  List<Object?> get props => [pedidoId];
-}
-
-class PedidoAceito extends PedidosState {
-  final PedidoModel pedido;
-  const PedidoAceito(this.pedido);
-  @override
-  List<Object?> get props => [pedido];
-}
-
-class PedidoRecusando extends PedidosState {
-  final int pedidoId;
-  const PedidoRecusando(this.pedidoId);
-  @override
-  List<Object?> get props => [pedidoId];
-}
-
-class PedidoRecusado extends PedidosState {
-  final PedidoModel pedido;
-  const PedidoRecusado(this.pedido);
-  @override
-  List<Object?> get props => [pedido];
 }
 
 class PedidoActionError extends PedidosState {

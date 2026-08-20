@@ -34,17 +34,23 @@ class CardapioService {
   }
 
   Future<ProdutoModel> criar(ProdutoModel produto) async {
+    final data = produto.toJson();
+    data.remove('loja_id'); // 🔥 Removido do body (enviado pelo header)
+    
     final response = await _apiClient.post(
       '/api/lojista/cardapio/create',
-      data: produto.toJson(),
+      data: data,
     );
     return ProdutoModel.fromJson(response.data['data']);
   }
 
   Future<ProdutoModel> atualizar(int id, ProdutoModel produto) async {
+    final data = produto.toJson();
+    data.remove('loja_id'); // 🔥 Removido do body (enviado pelo header)
+
     final response = await _apiClient.put(
       '/api/lojista/cardapio/update/$id',
-      data: produto.toJson(),
+      data: data,
     );
     return ProdutoModel.fromJson(response.data['data']);
   }

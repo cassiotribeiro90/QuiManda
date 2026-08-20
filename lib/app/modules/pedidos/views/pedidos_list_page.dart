@@ -1,4 +1,3 @@
-// lib/app/modules/pedidos/views/pedidos_list_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -162,22 +161,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
               SnackBar(content: Text(state.message)),
             );
           }
-          if (state is PedidoAceito) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Pedido aceito com sucesso!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-          if (state is PedidoRecusado) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ Pedido recusado'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
         },
         builder: (context, state) {
           // 🔥 Estado de carregamento inicial (apenas na primeira vez ou refresh manual)
@@ -260,25 +243,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
         },
       ),
     );
-  }
-
-  void _tratarAcaoPrincipal(BuildContext context, int id, String status) {
-    if (status == 'novo') {
-      _confirmarAceitar(context, id);
-    } else {
-      String novoStatus = '';
-      if (status == 'em_preparo') {
-        novoStatus = 'pronto';
-      } else if (status == 'pronto') {
-        novoStatus = 'saiu';
-      } else if (status == 'saiu') {
-        novoStatus = 'entregue';
-      }
-      
-      if (novoStatus.isNotEmpty) {
-        context.read<PedidosCubit>().atualizarStatus(id, novoStatus);
-      }
-    }
   }
 
   void _abrirDetalhes(BuildContext context, PedidoModel pedido) {
@@ -396,30 +360,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 color: isBold ? Colors.green : Colors.black87,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmarAceitar(BuildContext context, int id) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Aceitar pedido'),
-        content: const Text('Deseja aceitar este pedido?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<PedidosCubit>().aceitarPedido(id);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Aceitar'),
           ),
         ],
       ),

@@ -84,6 +84,7 @@ class PedidoStatusSection extends StatelessWidget {
           ),
         ),
         ...pedidos.map((pedido) => PedidoCardWidget(
+          key: ValueKey('pedido_${pedido.id}'), // 🔥 Key única para evitar rebuilds
           pedido: pedido,
           onAceitar: () => onAceitar(pedido.id),
           onRecusar: () => onRecusar(pedido.id),

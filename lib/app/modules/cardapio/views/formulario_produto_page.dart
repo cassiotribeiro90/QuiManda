@@ -566,7 +566,6 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
 
     final data = {
       'id': widget.produto?.id,
-      'loja_id': authState.lojista.id,
       'subcategoria_id': _subcategoriaId,
       'categoria_id': _categoriaId,
       'tipo': 'simples',

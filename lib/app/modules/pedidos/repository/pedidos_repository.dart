@@ -1,5 +1,6 @@
 // lib/app/modules/pedidos/repository/pedidos_repository.dart
 import '../model/pedido_model.dart';
+import '../model/pedido_action_response.dart';
 import '../service/pedidos_service.dart';
 
 class PedidoRepository {
@@ -41,7 +42,6 @@ class PedidoRepository {
 
   Future<(List<PedidoModel>, int)> listar({
     String? status,
-    int? lojaId,
     String? dataInicio,
     String? dataFim,
     int page = 1,
@@ -49,7 +49,6 @@ class PedidoRepository {
   }) async {
     final data = await _service.listar(
       status: status,
-      lojaId: lojaId,
       dataInicio: dataInicio,
       dataFim: dataFim,
       page: page,
@@ -65,24 +64,24 @@ class PedidoRepository {
     return PedidoModel.fromJson(data['data']);
   }
 
-  Future<PedidoModel> aceitar(int id) async {
+  Future<PedidoActionResponse> aceitar(int id) async {
     final data = await _service.aceitar(id);
-    return PedidoModel.fromJson(data['data']);
+    return PedidoActionResponse.fromJson(data['data']);
   }
 
-  Future<PedidoModel> recusar(int id, {String? motivo, String? motivoCodigo}) async {
+  Future<PedidoActionResponse> recusar(int id, {String? motivo, String? motivoCodigo}) async {
     final data = await _service.recusar(id, motivo: motivo, motivoCodigo: motivoCodigo);
-    return PedidoModel.fromJson(data['data']);
+    return PedidoActionResponse.fromJson(data['data']);
   }
 
-  Future<PedidoModel> atualizarStatus(int id, String status, {String? motivo}) async {
+  Future<PedidoActionResponse> atualizarStatus(int id, String status, {String? motivo}) async {
     final data = await _service.atualizarStatus(id, status, motivo: motivo);
-    return PedidoModel.fromJson(data['data']);
+    return PedidoActionResponse.fromJson(data['data']);
   }
 
-  Future<PedidoModel> cancelar(int id, String motivo) async {
+  Future<PedidoActionResponse> cancelar(int id, String motivo) async {
     final data = await _service.cancelar(id, motivo);
-    return PedidoModel.fromJson(data['data']);
+    return PedidoActionResponse.fromJson(data['data']);
   }
 
   Future<Map<String, int>> statusCount() async {

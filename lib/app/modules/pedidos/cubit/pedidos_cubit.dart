@@ -1,7 +1,7 @@
-// lib/app/modules/pedidos/cubit/pedidos_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'pedidos_state.dart';
 import '../repository/pedidos_repository.dart';
+import '../model/pedido_action_response.dart';
 
 class PedidosCubit extends Cubit<PedidosState> {
   final PedidoRepository _repository;
@@ -14,9 +14,9 @@ class PedidosCubit extends Cubit<PedidosState> {
   // 🔥 Carregar pedidos ativos
   Future<void> carregarPedidosAtivos({
     bool silencioso = false,
-    bool forceRefresh = true, // ✅ Parâmetro adicionado
+    bool forceRefresh = true,
   }) async {
-    // Se for silencioso e já tem dados, não mostra loading global, mas sim o flag no estado
+    // Se for silencioso e já tem dados, não mostra loading global
     if (!silencioso) {
       emit(PedidosLoading());
     } else if (_currentLoadedState != null) {
@@ -25,14 +25,14 @@ class PedidosCubit extends Cubit<PedidosState> {
 
     try {
       final data = await _repository.listarAtivosAgrupados(
-        forceRefresh: forceRefresh, // ✅ Passa o parâmetro
+        forceRefresh: forceRefresh,
       );
       final groups = data['grupos'] as List? ?? [];
       final groupedModels = groups.map((e) => GrupoPedidos.fromJson(e)).toList();
       final total = groupedModels.fold(0, (sum, group) => sum + group.total);
 
       final novoEstado = PedidosLoaded(
-        grupos: List<GrupoPedidos>.from(groupedModels), // ✅ Nova instância
+        grupos: List<GrupoPedidos>.from(groupedModels),
         totalPedidos: total,
         isLoading: false,
       );
@@ -43,7 +43,6 @@ class PedidosCubit extends Cubit<PedidosState> {
       if (!silencioso) {
         emit(PedidosError(e.toString()));
       } else if (_currentLoadedState != null) {
-        // Em caso de erro silencioso, volta para o estado anterior sem o flag de loading
         emit(_currentLoadedState!.copyWith(isLoading: false));
       }
     }
@@ -59,44 +58,69 @@ class PedidosCubit extends Cubit<PedidosState> {
     await carregarPedidosAtivos(silencioso: false);
   }
 
-  // 🔥 Aceitar pedido
+  // 🔥 Aceitar pedido - atualiza direto com a resposta
   Future<void> aceitarPedido(int id) async {
-    emit(PedidoAceitando(id));
     try {
-      final pedido = await _repository.aceitar(id);
-      emit(PedidoAceito(pedido));
-      _repository.clearCache(); // ✅ Limpa cache
-      // ✅ Força refresh do servidor mantendo o modo silencioso
-      await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      final response = await _repository.aceitar(id);
+      
+      if (response.grupos != null) {
+        final total = response.grupos!.fold(0, (sum, group) => sum + group.total);
+        final novoEstado = PedidosLoaded(
+          grupos: response.grupos!,
+          totalPedidos: total,
+          isLoading: false,
+        );
+        _currentLoadedState = novoEstado;
+        emit(novoEstado);
+      } else {
+        await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      }
     } catch (e) {
       emit(PedidoActionError(e.toString()));
     }
   }
 
-  // 🔥 Recusar pedido
+  // 🔥 Recusar pedido - atualiza direto com a resposta
   Future<void> recusarPedido(int id, {String? motivo, String? motivoCodigo}) async {
-    emit(PedidoRecusando(id));
     try {
-      final pedido = await _repository.recusar(id, motivo: motivo, motivoCodigo: motivoCodigo);
-      emit(PedidoRecusado(pedido));
-      _repository.clearCache(); // ✅ Limpa cache
-      // ✅ Força refresh do servidor mantendo o modo silencioso
-      await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      final response = await _repository.recusar(id, motivo: motivo, motivoCodigo: motivoCodigo);
+      
+      if (response.grupos != null) {
+        final total = response.grupos!.fold(0, (sum, group) => sum + group.total);
+        final novoEstado = PedidosLoaded(
+          grupos: response.grupos!,
+          totalPedidos: total,
+          isLoading: false,
+        );
+        _currentLoadedState = novoEstado;
+        emit(novoEstado);
+      } else {
+        await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      }
     } catch (e) {
       emit(PedidoActionError(e.toString()));
     }
   }
 
-  // 🔥 Atualizar status
+  // 🔥 Atualizar status - atualiza direto com a resposta
   Future<void> atualizarStatus(int id, String status, {String? motivo}) async {
-    emit(PedidosLoading());
     try {
-      await _repository.atualizarStatus(id, status, motivo: motivo);
-      _repository.clearCache(); // ✅ Limpa cache
-      // ✅ Força refresh do servidor mantendo o modo silencioso
-      await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      final response = await _repository.atualizarStatus(id, status, motivo: motivo);
+      
+      if (response.grupos != null) {
+        final total = response.grupos!.fold(0, (sum, group) => sum + group.total);
+        final novoEstado = PedidosLoaded(
+          grupos: response.grupos!,
+          totalPedidos: total,
+          isLoading: false,
+        );
+        _currentLoadedState = novoEstado;
+        emit(novoEstado);
+      } else {
+        await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      }
     } catch (e) {
-      emit(PedidosError(e.toString()));
+      emit(PedidoActionError(e.toString()));
     }
   }
 }
