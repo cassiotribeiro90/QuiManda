@@ -44,29 +44,36 @@ class PedidosLoaded extends PedidosState {
   final List<GrupoPedidos> grupos;
   final int totalPedidos;
   final bool isLoading; // 🔥 Indica refresh em background
+  final int? updatingPedidoId; // 🔥 NOVO: ID do pedido sendo atualizado
 
   const PedidosLoaded({
     required this.grupos,
     this.totalPedidos = 0,
     this.isLoading = false,
+    this.updatingPedidoId,
   });
 
   PedidosLoaded copyWith({
     List<GrupoPedidos>? grupos,
     int? totalPedidos,
     bool? isLoading,
+    int? updatingPedidoId,
   }) {
     return PedidosLoaded(
       grupos: grupos ?? this.grupos,
       totalPedidos: totalPedidos ?? this.totalPedidos,
       isLoading: isLoading ?? this.isLoading,
+      updatingPedidoId: updatingPedidoId ?? this.updatingPedidoId,
     );
   }
 
   bool get hasPedidos => grupos.any((g) => g.itens.isNotEmpty);
+  
+  // 🔥 Verifica se um pedido específico está sendo atualizado
+  bool isUpdating(int pedidoId) => updatingPedidoId == pedidoId;
 
   @override
-  List<Object?> get props => [grupos, totalPedidos, isLoading];
+  List<Object?> get props => [grupos, totalPedidos, isLoading, updatingPedidoId];
 }
 
 class PedidosError extends PedidosState {

@@ -229,6 +229,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                   label: grupo.label,
                   total: grupo.total,
                   pedidos: grupo.itens,
+                  updatingPedidoId: state.updatingPedidoId, // 🔥 Passa o ID em atualização
                   onAceitar: (id) => context.read<PedidosCubit>().aceitarPedido(id),
                   onRecusar: (id) => _mostrarMotivoRecusa(context, id),
                   onAtualizarStatus: (id, novoStatus) =>

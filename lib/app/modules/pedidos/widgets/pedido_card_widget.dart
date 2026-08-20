@@ -7,6 +7,7 @@ import 'status_badge_widget.dart';
 
 class PedidoCardWidget extends StatelessWidget {
   final PedidoModel pedido;
+  final bool isUpdating; // 🔥 Adicionado
   final VoidCallback onAceitar;
   final VoidCallback onRecusar;
   final void Function(String novoStatus) onAtualizarStatus;
@@ -15,6 +16,7 @@ class PedidoCardWidget extends StatelessWidget {
   const PedidoCardWidget({
     super.key,
     required this.pedido,
+    this.isUpdating = false, // 🔥 Adicionado
     required this.onAceitar,
     required this.onRecusar,
     required this.onAtualizarStatus,
@@ -167,6 +169,31 @@ class PedidoCardWidget extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (isUpdating) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Atualizando...',
+                          style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 const SizedBox(width: 8),
                 StatusBadgeWidget(status: pedido.status),
                 const SizedBox(width: 8),
@@ -366,9 +393,9 @@ class PedidoCardWidget extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _getAcaoPrincipal(),
+                      onPressed: isUpdating ? null : _getAcaoPrincipal(),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _getCorBotaoPrincipal(),
+                        backgroundColor: isUpdating ? Colors.grey : _getCorBotaoPrincipal(),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -380,13 +407,19 @@ class PedidoCardWidget extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      child: Text(_getTextoBotaoPrincipal()),
+                      child: isUpdating
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(_getTextoBotaoPrincipal()),
                     ),
                   ),
                   if (isNovo) ...[
                     const SizedBox(width: 8),
                     IconButton(
-                      onPressed: onRecusar,
+                      onPressed: isUpdating ? null : onRecusar,
                       icon: const Icon(Icons.close, color: Colors.red, size: 28),
                       tooltip: 'Recusar pedido',
                       style: IconButton.styleFrom(

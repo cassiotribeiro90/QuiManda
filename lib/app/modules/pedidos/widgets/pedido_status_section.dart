@@ -8,6 +8,7 @@ class PedidoStatusSection extends StatelessWidget {
   final String label;
   final int total;
   final List<PedidoModel> pedidos;
+  final int? updatingPedidoId; // 🔥 Adicionado
   final Function(int) onAceitar;
   final Function(int) onRecusar;
   final Function(int, String) onAtualizarStatus;
@@ -19,6 +20,7 @@ class PedidoStatusSection extends StatelessWidget {
     required this.label,
     required this.total,
     required this.pedidos,
+    this.updatingPedidoId, // 🔥 Adicionado
     required this.onAceitar,
     required this.onRecusar,
     required this.onAtualizarStatus,
@@ -86,6 +88,7 @@ class PedidoStatusSection extends StatelessWidget {
         ...pedidos.map((pedido) => PedidoCardWidget(
           key: ValueKey('pedido_${pedido.id}'), // 🔥 Key única para evitar rebuilds
           pedido: pedido,
+          isUpdating: updatingPedidoId == pedido.id, // 🔥 Passa o flag
           onAceitar: () => onAceitar(pedido.id),
           onRecusar: () => onRecusar(pedido.id),
           onAtualizarStatus: (status) => onAtualizarStatus(pedido.id, status),

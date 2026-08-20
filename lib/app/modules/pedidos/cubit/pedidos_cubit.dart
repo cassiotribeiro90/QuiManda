@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'pedidos_state.dart';
 import '../repository/pedidos_repository.dart';
-import '../model/pedido_action_response.dart';
 
 class PedidosCubit extends Cubit<PedidosState> {
   final PedidoRepository _repository;
@@ -60,6 +59,11 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   // 🔥 Aceitar pedido - atualiza direto com a resposta
   Future<void> aceitarPedido(int id) async {
+    // 🔥 Atualiza estado com o ID do pedido em processamento
+    if (_currentLoadedState != null) {
+      emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
+    }
+
     try {
       final response = await _repository.aceitar(id);
       
@@ -69,6 +73,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           grupos: response.grupos!,
           totalPedidos: total,
           isLoading: false,
+          updatingPedidoId: null, // 🔥 Limpa o estado de atualização
         );
         _currentLoadedState = novoEstado;
         emit(novoEstado);
@@ -76,12 +81,21 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
+      // 🔥 Em caso de erro, limpa o estado de atualização
+      if (_currentLoadedState != null) {
+        emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
+      }
       emit(PedidoActionError(e.toString()));
     }
   }
 
   // 🔥 Recusar pedido - atualiza direto com a resposta
   Future<void> recusarPedido(int id, {String? motivo, String? motivoCodigo}) async {
+    // 🔥 Atualiza estado com o ID do pedido em processamento
+    if (_currentLoadedState != null) {
+      emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
+    }
+
     try {
       final response = await _repository.recusar(id, motivo: motivo, motivoCodigo: motivoCodigo);
       
@@ -91,6 +105,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           grupos: response.grupos!,
           totalPedidos: total,
           isLoading: false,
+          updatingPedidoId: null, // 🔥 Limpa o estado de atualização
         );
         _currentLoadedState = novoEstado;
         emit(novoEstado);
@@ -98,12 +113,21 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
+      // 🔥 Em caso de erro, limpa o estado de atualização
+      if (_currentLoadedState != null) {
+        emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
+      }
       emit(PedidoActionError(e.toString()));
     }
   }
 
   // 🔥 Atualizar status - atualiza direto com a resposta
   Future<void> atualizarStatus(int id, String status, {String? motivo}) async {
+    // 🔥 Atualiza estado com o ID do pedido em processamento
+    if (_currentLoadedState != null) {
+      emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
+    }
+
     try {
       final response = await _repository.atualizarStatus(id, status, motivo: motivo);
       
@@ -113,6 +137,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           grupos: response.grupos!,
           totalPedidos: total,
           isLoading: false,
+          updatingPedidoId: null, // 🔥 Limpa o estado de atualização
         );
         _currentLoadedState = novoEstado;
         emit(novoEstado);
@@ -120,6 +145,10 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
+      // 🔥 Em caso de erro, limpa o estado de atualização
+      if (_currentLoadedState != null) {
+        emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
+      }
       emit(PedidoActionError(e.toString()));
     }
   }
