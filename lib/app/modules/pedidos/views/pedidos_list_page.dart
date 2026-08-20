@@ -246,8 +246,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                   label: grupo.label,
                   total: grupo.total,
                   pedidos: grupo.itens,
-                  onAceitar: (id) => _tratarAcaoPrincipal(context, id, grupo.status),
+                  onAceitar: (id) => context.read<PedidosCubit>().aceitarPedido(id),
                   onRecusar: (id) => _mostrarMotivoRecusa(context, id),
+                  onAtualizarStatus: (id, novoStatus) =>
+                      context.read<PedidosCubit>().atualizarStatus(id, novoStatus),
                   onCardTap: (pedido) => _abrirDetalhes(context, pedido),
                 )).toList(),
               ),

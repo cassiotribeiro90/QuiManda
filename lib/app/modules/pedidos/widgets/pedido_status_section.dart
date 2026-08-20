@@ -10,6 +10,7 @@ class PedidoStatusSection extends StatelessWidget {
   final List<PedidoModel> pedidos;
   final Function(int) onAceitar;
   final Function(int) onRecusar;
+  final Function(int, String) onAtualizarStatus;
   final Function(PedidoModel) onCardTap;
 
   const PedidoStatusSection({
@@ -20,6 +21,7 @@ class PedidoStatusSection extends StatelessWidget {
     required this.pedidos,
     required this.onAceitar,
     required this.onRecusar,
+    required this.onAtualizarStatus,
     required this.onCardTap,
   });
 
@@ -83,9 +85,9 @@ class PedidoStatusSection extends StatelessWidget {
         ),
         ...pedidos.map((pedido) => PedidoCardWidget(
           pedido: pedido,
-          onTap: () => onCardTap(pedido),
           onAceitar: () => onAceitar(pedido.id),
           onRecusar: () => onRecusar(pedido.id),
+          onAtualizarStatus: (status) => onAtualizarStatus(pedido.id, status),
         )),
       ],
     );

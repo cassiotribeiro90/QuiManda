@@ -12,6 +12,12 @@ class PedidoRepository {
 
   PedidoRepository(this._service);
 
+  /// ✅ Limpa o cache para forçar nova busca
+  void clearCache() {
+    _cache = null;
+    _cacheTime = null;
+  }
+
   Future<List<PedidoModel>> listarAtivos() async {
     final data = await _service.listarAtivos();
     final items = data['data']?['items'] as List? ?? [];

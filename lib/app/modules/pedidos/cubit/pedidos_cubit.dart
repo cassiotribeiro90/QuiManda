@@ -5,15 +5,18 @@ import '../repository/pedidos_repository.dart';
 
 class PedidosCubit extends Cubit<PedidosState> {
   final PedidoRepository _repository;
-  
+
   // 🔥 Manter o estado atual para fazer merge
   PedidosLoaded? _currentLoadedState;
 
   PedidosCubit(this._repository) : super(PedidosInitial());
 
   // 🔥 Carregar pedidos ativos
-  Future<void> carregarPedidosAtivos({bool silencioso = false}) async {
-    // 🔥 Se for silencioso e já tem dados, não mostra loading global, mas sim o flag no estado
+  Future<void> carregarPedidosAtivos({
+    bool silencioso = false,
+    bool forceRefresh = true, // ✅ Parâmetro adicionado
+  }) async {
+    // Se for silencioso e já tem dados, não mostra loading global, mas sim o flag no estado
     if (!silencioso) {
       emit(PedidosLoading());
     } else if (_currentLoadedState != null) {
@@ -21,17 +24,19 @@ class PedidosCubit extends Cubit<PedidosState> {
     }
 
     try {
-      final data = await _repository.listarAtivosAgrupados(forceRefresh: !silencioso);
+      final data = await _repository.listarAtivosAgrupados(
+        forceRefresh: forceRefresh, // ✅ Passa o parâmetro
+      );
       final groups = data['grupos'] as List? ?? [];
       final groupedModels = groups.map((e) => GrupoPedidos.fromJson(e)).toList();
       final total = groupedModels.fold(0, (sum, group) => sum + group.total);
 
       final novoEstado = PedidosLoaded(
-        grupos: groupedModels, 
+        grupos: List<GrupoPedidos>.from(groupedModels), // ✅ Nova instância
         totalPedidos: total,
         isLoading: false,
       );
-      
+
       _currentLoadedState = novoEstado;
       emit(novoEstado);
     } catch (e) {
@@ -60,7 +65,9 @@ class PedidosCubit extends Cubit<PedidosState> {
     try {
       final pedido = await _repository.aceitar(id);
       emit(PedidoAceito(pedido));
-      await carregarPedidosAtivos(silencioso: true);
+      _repository.clearCache(); // ✅ Limpa cache
+      // ✅ Força refresh do servidor mantendo o modo silencioso
+      await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
     } catch (e) {
       emit(PedidoActionError(e.toString()));
     }
@@ -72,7 +79,9 @@ class PedidosCubit extends Cubit<PedidosState> {
     try {
       final pedido = await _repository.recusar(id, motivo: motivo, motivoCodigo: motivoCodigo);
       emit(PedidoRecusado(pedido));
-      await carregarPedidosAtivos(silencioso: true);
+      _repository.clearCache(); // ✅ Limpa cache
+      // ✅ Força refresh do servidor mantendo o modo silencioso
+      await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
     } catch (e) {
       emit(PedidoActionError(e.toString()));
     }
@@ -80,11 +89,12 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   // 🔥 Atualizar status
   Future<void> atualizarStatus(int id, String status, {String? motivo}) async {
-    // Usamos o loading global aqui para feedback visual imediato de mudança de status
     emit(PedidosLoading());
     try {
       await _repository.atualizarStatus(id, status, motivo: motivo);
-      await carregarPedidosAtivos(silencioso: true);
+      _repository.clearCache(); // ✅ Limpa cache
+      // ✅ Força refresh do servidor mantendo o modo silencioso
+      await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
     } catch (e) {
       emit(PedidosError(e.toString()));
     }
