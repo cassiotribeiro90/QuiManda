@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'dart:html' as html;
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 import 'tts_interface.dart';
 
 /// Implementação WEB do TTS usando SpeechSynthesis API
 class TtsWeb implements TtsInterface {
-  final List<String> _queue = [];
   bool _isSpeaking = false;
   bool _isInitialized = false;
   bool _isUserInteracted = false;
-  html.SpeechSynthesis? _speechSynthesis;
+  web.SpeechSynthesis? _speechSynthesis;
   Timer? _keepAliveTimer;
   bool _isProcessing = false;
 
@@ -17,7 +17,7 @@ class TtsWeb implements TtsInterface {
     if (_isInitialized) return;
 
     try {
-      _speechSynthesis = html.window.speechSynthesis;
+      _speechSynthesis = web.window.speechSynthesis;
       if (_speechSynthesis == null) {
         print('[TTS_WEB] SpeechSynthesis não disponível');
         return;
@@ -36,14 +36,13 @@ class TtsWeb implements TtsInterface {
 
     var voices = _speechSynthesis!.getVoices();
 
-    if (voices.isEmpty) {
+    if (voices.length == 0) {
       print('[TTS_WEB] Aguardando vozes...');
       final synth = _speechSynthesis!;
-      // Tenta carregar vozes por até 3 segundos
       int attempts = 0;
-      while (voices.isEmpty && attempts < 6) {
+      while (voices.length == 0 && attempts < 6) {
         await Future.delayed(const Duration(milliseconds: 500));
-        voices = synth.getVoices().cast<html.SpeechSynthesisVoice>();
+        voices = synth.getVoices();
         attempts++;
       }
     }
@@ -55,38 +54,31 @@ class TtsWeb implements TtsInterface {
   void onUserInteraction() {
     _isUserInteracted = true;
     print('[TTS_WEB] Interação registrada');
-    
-    // 🔥 ATIVA O CONTEXTO UMA ÚNICA VEZ
+
     if (_speechSynthesis != null && !_isProcessing) {
       _activateContext();
     }
   }
 
-  /// 🔥 ATIVA O CONTEXTO UMA ÚNICA VEZ
   void _activateContext() {
     if (_speechSynthesis == null) return;
     if (_isProcessing) return;
 
     _isProcessing = true;
     try {
-      // 🔥 FALA UM TEXTO CURTO E CANCELA
-      final utterance = html.SpeechSynthesisUtterance(' ');
+      final utterance = web.SpeechSynthesisUtterance.new(' ');
       utterance.lang = 'pt-BR';
       utterance.volume = 0.1;
       _speechSynthesis!.speak(utterance);
-      
+
       Future<void>.delayed(const Duration(milliseconds: 100), () {
-        // 🔥 SÓ CANCELA SE NÃO HOUVER FALA EM ANDAMENTO
         final synth = _speechSynthesis;
-        if (synth != null && ((synth.speaking ?? false) == false || _queue.isEmpty)) {
+        if (synth != null && !synth.speaking) {
           synth.cancel();
         }
         _isProcessing = false;
         print('[TTS_WEB] Contexto ativado');
-        // 🔥 INICIA KEEP-ALIVE APÓS ATIVAÇÃO
         _startKeepAlive();
-        // 🔥 PROCESSA A FILA
-        _processNext();
       });
     } catch (e) {
       _isProcessing = false;
@@ -96,23 +88,19 @@ class TtsWeb implements TtsInterface {
 
   void _startKeepAlive() {
     _stopKeepAlive();
-    // 🔥 KEEP-ALIVE A CADA 15 SEGUNDOS (menos frequente)
     _keepAliveTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       final synth = _speechSynthesis;
-      // 🔥 SÓ EXECUTA KEEP-ALIVE SE NÃO ESTIVER FALANDO
-      if (synth != null && 
-          _isUserInteracted && 
-          !_isSpeaking && 
-          (synth.speaking ?? false) == false && 
-          _queue.isEmpty) {
+      if (synth != null &&
+          _isUserInteracted &&
+          !_isSpeaking &&
+          !synth.speaking) {
         try {
-          final utterance = html.SpeechSynthesisUtterance(' ');
+          final utterance = web.SpeechSynthesisUtterance.new(' ');
           utterance.lang = 'pt-BR';
           utterance.volume = 0;
           synth.speak(utterance);
-          // 🔥 CANCELA SEM INTERROMPER FALA ATIVA
           Future<void>.delayed(const Duration(milliseconds: 50), () {
-            if ((synth.speaking ?? false) == false) {
+            if (!synth.speaking) {
               synth.cancel();
             }
           });
@@ -128,12 +116,11 @@ class TtsWeb implements TtsInterface {
     _keepAliveTimer = null;
   }
 
-  /// 🔥 LIMPA TEXTO (remove emojis)
   String _cleanText(String text) {
-    return text
-        .replaceAll(RegExp(r'[^\w\s,.!?\-]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+    String cleaned = text.replaceAll(RegExp(r'[^\w\s,.!?\-]'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ');
+    cleaned = cleaned.trim();
+    return cleaned.isEmpty ? 'Pedido' : cleaned;
   }
 
   @override
@@ -145,87 +132,95 @@ class TtsWeb implements TtsInterface {
 
     if (!_isUserInteracted) {
       print('[TTS_WEB] Aguardando interação');
-      _queue.add(cleanText);
       return;
     }
 
-    // 🔥 NÃO ADICIONA DUPLICATAS CONSECUTIVAS
-    if (_queue.isNotEmpty && _queue.last == cleanText) {
-      print('[TTS_WEB] Texto duplicado ignorado: "$cleanText"');
+    if (_isSpeaking) {
+      print('[TTS_WEB] ⚠️ Já está falando, ignorando: "$cleanText"');
       return;
     }
 
-    _queue.add(cleanText);
-    print('[TTS_WEB] Fila: ${_queue.length}');
-
-    if (!_isSpeaking && !_isProcessing && _speechSynthesis != null) {
-      _processNext();
-    }
-  }
-
-  void _processNext() {
-    // 🔥 PREVINE PROCESSAMENTO MÚLTIPLO
-    if (_isProcessing) return;
-    if (_isSpeaking) return;
-    if (_queue.isEmpty) return;
     if (_speechSynthesis == null) return;
 
-    _isProcessing = true;
-    final nextText = _queue.removeAt(0);
-    print('[TTS_WEB] Falando: "$nextText" (restam ${_queue.length})');
+    print('[TTS_WEB] 🔊 Falando: "$cleanText"');
+
+    // 🔥 COMPLETER PARA AGUARDAR O FIM DA FALA
+    final completer = Completer<void>();
 
     try {
-      final utterance = html.SpeechSynthesisUtterance(nextText);
+      final utterance = web.SpeechSynthesisUtterance.new(cleanText);
 
       utterance.lang = 'pt-BR';
       utterance.rate = 0.9;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
-      // 🔥 SELECIONA VOZ
+      // 🔥 SELECIONA VOZ FEMININA EM PORTUGUÊS
       final voices = _speechSynthesis!.getVoices();
-      html.SpeechSynthesisVoice? ptVoice;
-      try {
-        ptVoice = voices.firstWhere(
-          (v) => v.lang != null && v.lang!.startsWith('pt'),
-        );
-      } catch (_) {
-        ptVoice = voices.isNotEmpty ? voices.first : null;
-      }
-      
-      if (ptVoice != null) {
-        utterance.voice = ptVoice;
+      web.SpeechSynthesisVoice? selectedVoice;
+      final voicesList = voices.toDart;
+
+      for (final voice in voicesList) {
+        final name = voice.name.toLowerCase();
+        final lang = voice.lang?.toLowerCase() ?? '';
+        if (lang.startsWith('pt') &&
+            (name.contains('female') ||
+                name.contains('feminina') ||
+                name.contains('samantha') ||
+                name.contains('maria') ||
+                name.contains('ana'))) {
+          selectedVoice = voice;
+          break;
+        }
       }
 
-      // 🔥 HANDLERS - SIMPLES E DIRETOS
-      utterance.onStart.listen((_) {
+      if (selectedVoice == null) {
+        try {
+          selectedVoice = voicesList.firstWhere(
+                (v) => v.lang != null && v.lang!.startsWith('pt'),
+          );
+        } catch (_) {
+          selectedVoice = voicesList.isNotEmpty ? voicesList.first : null;
+        }
+      }
+
+      if (selectedVoice != null) {
+        utterance.voice = selectedVoice;
+        print('[TTS_WEB] Voz selecionada: ${selectedVoice.name} (${selectedVoice.lang})');
+      } else {
+        print('[TTS_WEB] ⚠️ Nenhuma voz disponível');
+      }
+
+      // 🔥 HANDLERS COM COMPLETER
+      utterance.addEventListener('start', (_) {
         _isSpeaking = true;
-        _isProcessing = false;
-        print('[TTS_WEB] 🔊 Falando');
-      });
+        print('[TTS_WEB] 🔊 Iniciou fala');
+      }.toJS);
 
-      utterance.onEnd.listen((_) {
+      utterance.addEventListener('end', (_) {
         _isSpeaking = false;
-        _isProcessing = false;
-        print('[TTS_WEB] ✅ Terminou');
-        // 🔥 PRÓXIMO APÓS 500ms
-        Future.delayed(const Duration(milliseconds: 500), _processNext);
-      });
+        print('[TTS_WEB] ✅ Fala finalizada');
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      }.toJS);
 
-      utterance.onError.listen((event) {
+      utterance.addEventListener('error', (_) {
         _isSpeaking = false;
-        _isProcessing = false;
         print('[TTS_WEB] ❌ Erro na fala');
-        // 🔥 TENTA O PRÓXIMO APÓS 1s
-        Future.delayed(const Duration(seconds: 1), _processNext);
-      });
+        if (!completer.isCompleted) {
+          completer.completeError('Erro na fala');
+        }
+      }.toJS);
 
       _speechSynthesis!.speak(utterance);
+
+      // 🔥 AGUARDA O FIM DA FALA
+      await completer.future;
     } catch (e) {
       _isSpeaking = false;
-      _isProcessing = false;
       print('[TTS_WEB] ❌ Exceção: $e');
-      Future.delayed(const Duration(seconds: 1), _processNext);
+      rethrow;
     }
   }
 
@@ -235,17 +230,16 @@ class TtsWeb implements TtsInterface {
     if (_speechSynthesis != null) {
       _speechSynthesis!.cancel();
     }
-    _queue.clear();
     _isSpeaking = false;
     _isProcessing = false;
-    print('[TTS_WEB] Parado');
+    print('[TTS_WEB] 🛑 Parado');
   }
 
   @override
   bool get isSpeaking => _isSpeaking;
 
   @override
-  int get queueLength => _queue.length;
+  int get queueLength => 0;
 
   @override
   void dispose() {

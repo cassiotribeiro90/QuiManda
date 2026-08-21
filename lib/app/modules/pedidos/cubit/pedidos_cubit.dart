@@ -8,8 +8,8 @@ import '../model/pedido_model.dart';
 class PedidosCubit extends Cubit<PedidosState> {
   final PedidoRepository _repository;
   final TtsService _ttsService = TtsService();
-  int? _currentStoreId; // 🔥 Armazena o ID da loja atual
-  
+  int? _currentStoreId;
+
   // 🔥 ARMAZENA OS IDs DOS PEDIDOS QUE JÁ FORAM ALERTADOS
   final Set<int> _alertedPedidos = {};
 
@@ -61,55 +61,40 @@ class PedidosCubit extends Cubit<PedidosState> {
     }
   }
 
-  /// 🔥 PROCESSAMENTO DE PEDIDOS NOVOS E FILTRAGEM DE ALERTAS
+  /// 🔥 PROCESSAMENTO DE PEDIDOS NOVOS - USANDO syncAlerts
   void _processNovosPedidos(List<GrupoPedidos> grupos) {
     try {
-      // 🔥 VERIFICA SE A LISTA DE GRUPOS É VÁLIDA
-      // ignore: unnecessary_null_comparison
-      if (grupos == null || grupos.isEmpty) {
-        print('[PEDIDO_CUBIT] Nenhum grupo de pedidos para processar');
-        _ttsService.filterAlerts([]);
-        _alertedPedidos.clear();
-        return;
-      }
-
-      // Encontra pedidos com status 'novo'
+      // 🔥 ENCONTRA PEDIDOS COM STATUS 'NOVO'
       final List<PedidoModel> novosItens = [];
       for (var grupo in grupos) {
-        if (grupo != null && grupo.status == 'novo') {
+        if (grupo.status == 'novo') {
           novosItens.addAll(grupo.itens);
         }
       }
 
-      // 🔥 IDs DOS PEDIDOS QUE ESTÃO NOVOS (SEGURANÇA)
+      // 🔥 IDs DOS PEDIDOS QUE ESTÃO NOVOS
       final List<int> idsNovos = novosItens
-          .where((p) => p != null)
+          .where((p) => p != null && p.id != null)
           .map((p) => p.id)
           .toList();
 
       print('[PEDIDO_CUBIT] Pedidos novos encontrados: ${idsNovos.length}');
 
-      // 🔥 FILTRA A FILA DO TTS: REMOVE ALERTAS DE PEDIDOS QUE NÃO SÃO MAIS NOVOS
-      _ttsService.filterAlerts(idsNovos);
-
-      // 🔥 ADICIONA ALERTAS PARA PEDIDOS NOVOS QUE AINDA NÃO FORAM ALERTADOS
+      // 🔥 CONSTRÓI A LISTA DE ALERTAS PARA OS NOVOS PEDIDOS
+      final List<AlertItem> novosAlertas = [];
       for (final pedido in novosItens) {
-        // ignore: unnecessary_null_comparison
-        if (pedido == null || pedido.id == null) {
-          print('[PEDIDO_CUBIT] ⚠️ Pedido inválido ignorado');
-          continue;
-        }
-
-        if (!_alertedPedidos.contains(pedido.id)) {
-          _alertedPedidos.add(pedido.id);
-          final alerta = PedidoUtils.formatarAlertaPedido(pedido);
-          _ttsService.addAlert(pedido.id, alerta);
-          print('[PEDIDO_CUBIT] 🔔 Alerta adicionado para pedido ${pedido.id}');
-        }
+        if (pedido == null || pedido.id == null) continue;
+        final alerta = PedidoUtils.formatarAlertaPedido(pedido);
+        novosAlertas.add(AlertItem(pedidoId: pedido.id, text: alerta));
       }
 
-      // 🔥 LIMPA A LISTA DE ALERTADOS: MANTÉM APENAS OS QUE AINDA ESTÃO NA LISTA DE NOVOS
-      _alertedPedidos.retainAll(idsNovos);
+      // 🔥 🔥 🔥 CHAMA syncAlerts - ISSO LIMPA E RECONSTRÓI A FILA
+      _ttsService.syncAlerts(idsNovos, novosAlertas);
+
+      // 🔥 ATUALIZA O SET DE ALERTADOS
+      _alertedPedidos.clear();
+      _alertedPedidos.addAll(idsNovos);
+
     } catch (e, stackTrace) {
       print('[PEDIDO_CUBIT] ❌ Erro ao processar pedidos novos: $e');
       print('[PEDIDO_CUBIT] StackTrace: $stackTrace');
@@ -143,13 +128,8 @@ class PedidosCubit extends Cubit<PedidosState> {
   // 🔥 MÉTODO PARA PROCESSAR NOVO PEDIDO (usado via socket ou push)
   Future<void> onNovoPedido(PedidoModel pedido) async {
     try {
-      if (pedido != null && !_alertedPedidos.contains(pedido.id)) {
-        _alertedPedidos.add(pedido.id);
-        final alerta = PedidoUtils.formatarAlertaPedido(pedido);
-        _ttsService.addAlert(pedido.id, alerta);
-      }
-      
-      // Recarrega a lista de pedidos para atualizar a tela
+      // 🔥 🔥 🔥 NUNCA USE addAlert DIRETAMENTE
+      // Apenas recarrega e deixa o _processNovosPedidos fazer o trabalho
       await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
     } catch (e) {
       print('[PEDIDO_CUBIT] Erro ao processar novo pedido: $e');
@@ -175,13 +155,13 @@ class PedidosCubit extends Cubit<PedidosState> {
 
     try {
       final response = await _repository.aceitar(id);
-      
+
       // 🔥 REMOVE O ALERTA DO PEDIDO ACEITO IMEDIATAMENTE
       _removeAlert(id);
 
       if (response.grupos != null) {
         final total = response.grupos!.fold(0, (sum, group) => sum + group.total);
-        
+
         // 🔥 RECALCULA ALERTAS COM A NOVA LISTA
         _processNovosPedidos(response.grupos!);
 
@@ -192,7 +172,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           updatingPedidoId: null, // 🔥 Limpa o estado de atualização
         );
         _currentLoadedState = novoEstado;
-        
+
         emit(novoEstado);
       } else {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
@@ -215,13 +195,13 @@ class PedidosCubit extends Cubit<PedidosState> {
 
     try {
       final response = await _repository.recusar(id, motivo: motivo, motivoCodigo: motivoCodigo);
-      
+
       // 🔥 REMOVE O ALERTA DO PEDIDO RECUSADO IMEDIATAMENTE
       _removeAlert(id);
 
       if (response.grupos != null) {
         final total = response.grupos!.fold(0, (sum, group) => sum + group.total);
-        
+
         // 🔥 RECALCULA ALERTAS COM A NOVA LISTA
         _processNovosPedidos(response.grupos!);
 
@@ -246,7 +226,7 @@ class PedidosCubit extends Cubit<PedidosState> {
     }
   }
 
-  // 🔥 Atualizar status
+  // 🔥 ATUALIZAR STATUS
   Future<void> atualizarStatus(int id, String status, {String? motivo}) async {
     // 🔥 Atualiza estado com o ID do pedido em processamento
     if (_currentLoadedState != null) {
@@ -255,7 +235,7 @@ class PedidosCubit extends Cubit<PedidosState> {
 
     try {
       final response = await _repository.atualizarStatus(id, status, motivo: motivo);
-      
+
       // 🔥 SE O NOVO STATUS NÃO É "NOVO", REMOVE O ALERTA
       if (status != 'novo') {
         _removeAlert(id);
@@ -287,6 +267,44 @@ class PedidosCubit extends Cubit<PedidosState> {
     }
   }
 
+  // 🔥 CANCELAR PEDIDO
+  Future<void> cancelarPedido(int id, String motivo) async {
+    // 🔥 Atualiza estado com o ID do pedido em processamento
+    if (_currentLoadedState != null) {
+      emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
+    }
+
+    try {
+      final response = await _repository.cancelar(id, motivo);
+
+      // 🔥 REMOVE O ALERTA DO PEDIDO CANCELADO
+      _removeAlert(id);
+
+      if (response.grupos != null) {
+        final total = response.grupos!.fold(0, (sum, group) => sum + group.total);
+
+        // 🔥 RECALCULA ALERTAS COM A NOVA LISTA
+        _processNovosPedidos(response.grupos!);
+
+        final novoEstado = PedidosLoaded(
+          grupos: response.grupos!,
+          totalPedidos: total,
+          isLoading: false,
+          updatingPedidoId: null,
+        );
+        _currentLoadedState = novoEstado;
+        emit(novoEstado);
+      } else {
+        await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
+      }
+    } catch (e) {
+      if (_currentLoadedState != null) {
+        emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
+      }
+      emit(PedidoActionError(e.toString()));
+    }
+  }
+
   // 🔥 REMOVE ALERTA DE UM PEDIDO ESPECÍFICO
   void _removeAlert(int pedidoId) {
     _ttsService.removeAlertByPedidoId(pedidoId);
@@ -298,14 +316,14 @@ class PedidosCubit extends Cubit<PedidosState> {
   Future<void> toggleTtsMute() async {
     final isMuted = await _ttsService.toggleMute();
     print('[PEDIDO_CUBIT] TTS mudo: $isMuted');
-    
-    // Se desmutou e tem alertas, reinicia o loop
+
+    // Se desmutou e tem alertas, o loop reinicia automaticamente
     if (!isMuted && _alertedPedidos.isNotEmpty) {
       // O loop iniciará automaticamente através do setMuted(false) no TtsService
     }
 
     if (_currentLoadedState != null) {
-      emit(_currentLoadedState!.copyWith()); 
+      emit(_currentLoadedState!.copyWith());
     }
   }
 
@@ -313,6 +331,7 @@ class PedidosCubit extends Cubit<PedidosState> {
   bool get isTtsMuted => _ttsService.isMuted;
   bool get isTtsLooping => _ttsService.isLooping;
   int get pendingAlertsCount => _ttsService.pendingAlertsCount;
+  List<int> get pendingPedidoIds => _ttsService.pendingPedidoIds;
 
   @override
   Future<void> close() {

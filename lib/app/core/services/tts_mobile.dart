@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'tts_interface.dart';
 
 /// Implementação mobile do TTS usando flutter_tts
 class TtsMobile implements TtsInterface {
   final FlutterTts _flutterTts = FlutterTts();
-  final List<String> _queue = [];
   bool _isSpeaking = false;
   bool _isInitialized = false;
+
+  // 🔥 SEM FILA INTERNA - O TtsService gerencia a fila
 
   @override
   Future<void> init() async {
@@ -14,33 +16,34 @@ class TtsMobile implements TtsInterface {
 
     try {
       await _flutterTts.setLanguage('pt-BR');
-      await _flutterTts.setSpeechRate(0.9);
+      await _flutterTts.setSpeechRate(0.5);
       await _flutterTts.setPitch(1.0);
       await _flutterTts.setVolume(1.0);
 
       _flutterTts.setStartHandler(() {
         _isSpeaking = true;
+        print('[TTS_MOBILE] 🎤 Iniciou fala');
       });
 
       _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;
-        _processNext();
+        print('[TTS_MOBILE] ✅ Fala finalizada');
       });
 
       _flutterTts.setErrorHandler((msg) {
         _isSpeaking = false;
-        print('[TTS_MOBILE] Erro: $msg');
-        _processNext();
+        print('[TTS_MOBILE] ❌ Erro: $msg');
       });
 
       _flutterTts.setCancelHandler(() {
         _isSpeaking = false;
+        print('[TTS_MOBILE] 🛑 Fala cancelada');
       });
 
       _isInitialized = true;
-      print('[TTS_MOBILE] Inicializado com sucesso');
+      print('[TTS_MOBILE] ✅ Inicializado com sucesso');
     } catch (e) {
-      print('[TTS_MOBILE] Erro na inicialização: $e');
+      print('[TTS_MOBILE] ❌ Erro na inicialização: $e');
     }
   }
 
@@ -49,59 +52,110 @@ class TtsMobile implements TtsInterface {
     // Mobile não precisa de gesto do usuário para TTS
   }
 
+  /// 🔥 LIMPA TEXTO - REMOVE EMOJIS E CARACTERES ESPECIAIS
+  String _cleanText(String text) {
+    String cleaned = text.replaceAll(RegExp(r'[^\w\s,.!?\-]'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ');
+    cleaned = cleaned.trim();
+    return cleaned.isEmpty ? 'Pedido' : cleaned;
+  }
+
   @override
   Future<void> speak(String text) async {
     if (text.isEmpty) return;
-    _queue.add(text);
-    print('[TTS_MOBILE] Adicionado à fila: "$text" (tamanho: ${_queue.length})');
 
-    if (!_isSpeaking) {
-      _processNext();
-    }
-  }
+    final cleanText = _cleanText(text);
+    if (cleanText.isEmpty) return;
 
-  void _processNext() async {
-    if (_queue.isEmpty) {
-      _isSpeaking = false;
+    if (_isSpeaking) {
+      print('[TTS_MOBILE] ⚠️ Já está falando, ignorando: "$cleanText"');
       return;
     }
 
-    if (_isSpeaking) return;
-
-    final nextText = _queue.removeAt(0);
-    print('[TTS_MOBILE] Falando: "$nextText" (restam ${_queue.length})');
+    print('[TTS_MOBILE] 🔊 Falando: "$cleanText"');
 
     try {
-      final result = await _flutterTts.speak(nextText);
-      if (result != 1) {
-        print('[TTS_MOBILE] Erro ao falar: $result');
+      // 🔥 CRIA UM COMPLETER PARA AGUARDAR O FIM DA FALA
+      final completer = Completer<void>();
+
+      // 🔥 SALVA OS HANDLERS ORIGINAIS
+      final originalCompletion = _flutterTts.completionHandler;
+      final originalError = _flutterTts.errorHandler;
+
+      _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;
-        _processNext();
+        print('[TTS_MOBILE] ✅ Fala finalizada');
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+        // 🔥 RESTAURA O HANDLER ORIGINAL
+        if (originalCompletion != null) {
+          _flutterTts.setCompletionHandler(originalCompletion);
+        }
+      });
+
+      _flutterTts.setErrorHandler((msg) {
+        _isSpeaking = false;
+        print('[TTS_MOBILE] ❌ Erro: $msg');
+        if (!completer.isCompleted) {
+          completer.completeError(msg);
+        }
+        if (originalError != null) {
+          _flutterTts.setErrorHandler(originalError);
+        }
+      });
+
+      final result = await _flutterTts.speak(cleanText);
+      if (result != 1) {
+        _isSpeaking = false;
+        print('[TTS_MOBILE] ❌ Erro ao falar: $result');
+        if (!completer.isCompleted) {
+          completer.completeError('Erro ao falar: $result');
+        }
+        // Restaura os handlers
+        if (originalCompletion != null) {
+          _flutterTts.setCompletionHandler(originalCompletion);
+        }
+        if (originalError != null) {
+          _flutterTts.setErrorHandler(originalError);
+        }
+        return completer.future;
       }
+
+      // 🔥 AGUARDA O COMPLETION SER CHAMADO
+      await completer.future;
+
+      // 🔥 RESTAURA OS HANDLERS
+      if (originalCompletion != null) {
+        _flutterTts.setCompletionHandler(originalCompletion);
+      }
+      if (originalError != null) {
+        _flutterTts.setErrorHandler(originalError);
+      }
+
     } catch (e) {
-      print('[TTS_MOBILE] Exceção: $e');
       _isSpeaking = false;
-      _processNext();
+      print('[TTS_MOBILE] ❌ Exceção: $e');
+      rethrow;
     }
   }
 
   @override
   Future<void> stopAndClear() async {
     await _flutterTts.stop();
-    _queue.clear();
     _isSpeaking = false;
-    print('[TTS_MOBILE] Parado e fila limpa');
+    print('[TTS_MOBILE] 🛑 Parado');
   }
 
   @override
   bool get isSpeaking => _isSpeaking;
 
   @override
-  int get queueLength => _queue.length;
+  int get queueLength => 0;
 
   @override
   void dispose() {
     _flutterTts.stop();
-    _queue.clear();
+    _isSpeaking = false;
   }
 }
