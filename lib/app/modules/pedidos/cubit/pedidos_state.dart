@@ -17,9 +17,9 @@ class GrupoPedidos extends Equatable {
 
   factory GrupoPedidos.fromJson(Map<String, dynamic> json) {
     return GrupoPedidos(
-      status: json['status'] ?? '',
-      label: json['label'] ?? '',
-      total: json['total'] ?? 0,
+      status: json['status']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      total: (json['total'] as num?)?.toInt() ?? 0,
       itens: (json['itens'] as List?)
           ?.map((e) => PedidoModel.fromJson(e))
           .toList() ?? [],

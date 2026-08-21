@@ -27,6 +27,7 @@ import '../modules/configuracoes/bloc/configuracoes_cubit.dart';
 
 import '../core/storage/store_storage.dart';
 import '../modules/store/bloc/store_cubit.dart';
+import '../core/services/tts_config_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -36,6 +37,7 @@ Future<void> setupDependencies() async {
   
   // Services
   getIt.registerLazySingleton<StorageService>(() => StorageService(getIt<SharedPreferences>()));
+  getIt.registerLazySingleton<TtsConfigService>(() => TtsConfigService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<StoreStorage>(() => StoreStorage(getIt<SharedPreferences>()));
   

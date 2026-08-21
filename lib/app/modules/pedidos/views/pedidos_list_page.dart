@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/pedidos_cubit.dart';
 import '../cubit/pedidos_state.dart';
 import '../model/pedido_model.dart';
+import '../model/pedido_item_model.dart';
 import '../widgets/pedido_status_section.dart';
 import '../widgets/pedido_empty_widget.dart';
 import '../widgets/status_badge_widget.dart';
@@ -130,6 +131,74 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
               )
             : null,
         actions: [
+          // 🔥 INDICADOR DE LOOP (exibe quando está repetindo alertas)
+          BlocBuilder<PedidosCubit, PedidosState>(
+            builder: (context, state) {
+              final isLooping = context.read<PedidosCubit>().isTtsLooping;
+              final pendingCount = context.read<PedidosCubit>().pendingAlertsCount;
+              
+              if (isLooping && pendingCount > 0) {
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade700,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$pendingCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          // 🔥 Botão Mudo
+          BlocBuilder<PedidosCubit, PedidosState>(
+            builder: (context, state) {
+              final isMuted = context.read<PedidosCubit>().isTtsMuted;
+              return IconButton(
+                icon: Icon(
+                  isMuted ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
+                ),
+                tooltip: isMuted ? 'Ativar som' : 'Desativar som',
+                onPressed: () {
+                  // 🔥 Registra interação do usuário para habilitar áudio (especialmente Web)
+                  context.read<PedidosCubit>().registerUserInteraction();
+                  context.read<PedidosCubit>().toggleTtsMute();
+                  
+                  // Feedback visual
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isMuted ? '🔊 Som ativado' : '🔇 Som desativado'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: isMuted ? Colors.green : Colors.red,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           // 🔥 Indicador de refresh silencioso
           BlocBuilder<PedidosCubit, PedidosState>(
             builder: (context, state) {
@@ -156,6 +225,24 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // 🔥 SIMULA UM NOVO PEDIDO PARA TESTAR TTS
+          final pedido = PedidoModel(
+            id: 999,
+            clienteNome: 'João Silva',
+            lojaId: 1,
+            status: 'novo',
+            total: 50.0,
+            itens: [
+              PedidoItemModel(nome: 'Pizza Calabresa', quantidade: 1, precoUnitario: 35.0, total: 35.0),
+              PedidoItemModel(nome: 'Coca-cola 2L', quantidade: 2, precoUnitario: 7.5, total: 15.0),
+            ],
+          );
+          context.read<PedidosCubit>().onNovoPedido(pedido);
+        },
+        child: const Icon(Icons.volume_up),
       ),
       body: BlocConsumer<PedidosCubit, PedidosState>(
         listener: (context, state) {

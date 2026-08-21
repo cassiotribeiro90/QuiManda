@@ -80,7 +80,7 @@ class PedidoModel extends Equatable {
     }
 
     return PedidoModel(
-      id: json['id'] as int? ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       codigo: json['codigo']?.toString(),
       clienteNome: json['cliente_nome']?.toString(),
       clienteTelefone: json['cliente_telefone']?.toString(),

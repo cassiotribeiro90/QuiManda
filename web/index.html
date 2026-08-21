@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
@@ -31,16 +18,55 @@
 
   <title>quimanda</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- 🔥 SPEECHSYNTHESIS - VERSÃO INTELIGENTE -->
+  <script>
+    (function() {
+      if ('speechSynthesis' in window) {
+        console.log('✅ SpeechSynthesis disponível');
+
+        // Carrega vozes
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = function() {
+          console.log('✅ Vozes carregadas:', window.speechSynthesis.getVoices().length);
+        };
+
+        // 🔥 KEEP-ALIVE INTELIGENTE
+        function keepAlive() {
+          try {
+            // 🔥 SÓ EXECUTA SE NÃO ESTIVER FALANDO
+            if (!window.speechSynthesis.speaking) {
+              var utterance = new SpeechSynthesisUtterance(' ');
+              utterance.lang = 'pt-BR';
+              utterance.volume = 0;
+              window.speechSynthesis.speak(utterance);
+
+              // 🔥 CANCELA APÓS 50ms, MAS SÓ SE NÃO ESTIVER FALANDO
+              setTimeout(function() {
+                if (!window.speechSynthesis.speaking) {
+                  window.speechSynthesis.cancel();
+                }
+              }, 50);
+            }
+          } catch(e) {
+            // Ignora
+          }
+        }
+
+        // 🔥 EXECUTA A CADA 20 SEGUNDOS (menos frequente)
+        setInterval(keepAlive, 20000);
+
+        // Ativa no primeiro clique
+        document.addEventListener('click', function() {
+          keepAlive();
+        }, { once: true });
+
+        console.log('✅ SpeechSynthesis inicializado');
+      }
+    })();
+  </script>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
