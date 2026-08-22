@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/services/fcm_service.dart';
 import 'pedidos_state.dart';
 import '../repository/pedidos_repository.dart';
 import '../../../core/services/tts_service.dart';
@@ -17,6 +18,8 @@ class PedidosCubit extends Cubit<PedidosState> {
   PedidosLoaded? _currentLoadedState;
 
   PedidosCubit(this._repository) : super(PedidosInitial()) {
+    // 🔥 REGISTRA O CUBIT NO FCM PARA REFRESH AUTOMÁTICO
+    FcmService().pedidoCubit = this;
     // Inicializa o TTS quando o cubit é criado
     _ttsService.init();
   }

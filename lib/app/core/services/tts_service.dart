@@ -5,7 +5,7 @@ import 'tts_interface.dart';
 import 'tts_factory.dart';
 import 'tts_config_service.dart';
 
-/// Serviço unificado de TTS - Simplificado
+/// Serviço TTS - Loop simples com fila de pedidos
 class TtsService {
   static final TtsService _instance = TtsService._internal();
   factory TtsService() => _instance;
@@ -16,7 +16,6 @@ class TtsService {
   bool _isInitialized = false;
   bool _isUserInteracted = false;
 
-  // 🔥 ESTRUTURA SIMPLES9
   List<int> _pendingIds = [];
   Map<int, String> _alerts = {};
   int _currentIndex = 0;
@@ -26,21 +25,18 @@ class TtsService {
 
   Future<void> init() async {
     if (_isInitialized) return;
-
     try {
-      final configService = GetIt.I<TtsConfigService>();
-      _isMuted = !configService.isTtsEnabled();
-    } catch (_) {
-      _isMuted = false;
-    }
+      final config = GetIt.I<TtsConfigService>();
+      _isMuted = !config.isTtsEnabled();
+    } catch (_) {}
 
     try {
       _impl = TtsFactory.create();
       await _impl!.init();
       _isInitialized = true;
-      print('[TTS_SERVICE] ✅ Inicializado, mudo: $_isMuted');
+      print('[TTS] ✅ OK, mudo: $_isMuted');
     } catch (e) {
-      print('[TTS_SERVICE] ❌ Erro ao inicializar: $e');
+      print('[TTS] ❌ Erro: $e');
     }
   }
 
@@ -49,207 +45,127 @@ class TtsService {
     _impl?.onUserInteraction();
   }
 
-  /// 🔥 SYNCHRONIZE - SUBSTITUI A LISTA INTEIRA
+  /// 🔥 Substitui toda a fila pelos pedidos novos
   void syncAlerts(List<int> novosIds, List<AlertItem> novosAlertas) {
-    try {
-      print('[TTS_SERVICE] 📋 Sincronizando: ${novosIds.length} pedidos');
-
-      // 🔥 CRIA A NOVA LISTA (GARANTE QUE NÃO TEM DUPLICATAS)
-      final novosIdsUnicos = novosIds.toSet().toList();
-      final novaLista = <int>[];
-      final novoMap = <int, String>{};
-
-      for (final item in novosAlertas) {
-        if (!novoMap.containsKey(item.pedidoId)) {
-          novaLista.add(item.pedidoId);
-          novoMap[item.pedidoId] = item.text;
-        }
+    _pendingIds.clear();
+    _alerts.clear();
+    for (final item in novosAlertas) {
+      if (!_alerts.containsKey(item.pedidoId)) {
+        _pendingIds.add(item.pedidoId);
+        _alerts[item.pedidoId] = item.text;
       }
+    }
+    _currentIndex = 0;
+    if (_pendingIds.isEmpty) {
+      _stopAll();
+      return;
+    }
+    if (!_isLooping && !_isMuted) _startLoop();
+  }
 
-      // 🔥 🔥 🔥 SUBSTITUI A LISTA INTEIRA
-      _pendingIds = novaLista;
-      _alerts = novoMap;
-
-      // 🔥 🔥 🔥 AJUSTA O ÍNDICE
-      if (_pendingIds.isEmpty) {
-        _currentIndex = 0;
-        _stopLoop();
-        _stopSpeaking();
-        print('[TTS_SERVICE] 🔇 Sem pedidos, loop parado');
-        return;
-      }
-
-      if (_currentIndex >= _pendingIds.length) {
-        _currentIndex = _pendingIds.length - 1;
-      }
-
-      print('[TTS_SERVICE] 📋 IDs: ${_pendingIds.join(", ")}');
-      print('[TTS_SERVICE] 📋 Índice: $_currentIndex');
-
-      // 🔥 REINICIA O LOOP
-      if (!_isLooping && !_isMuted) {
-        _startLoop();
-      }
-    } catch (e) {
-      print('[TTS_SERVICE] ❌ Erro ao sincronizar: $e');
+  /// 🔥 Remove um pedido específico
+  void removeAlertByPedidoId(int pedidoId) {
+    final idx = _pendingIds.indexOf(pedidoId);
+    if (idx == -1) return;
+    _pendingIds.removeAt(idx);
+    _alerts.remove(pedidoId);
+    if (_pendingIds.isEmpty) {
+      _stopAll();
+    } else if (_currentIndex >= _pendingIds.length) {
+      _currentIndex = 0;
     }
   }
 
-  /// 🔥 REMOVE UM PEDIDO DA LISTA
-  void removeAlertByPedidoId(int pedidoId) {
-    final index = _pendingIds.indexOf(pedidoId);
-    if (index == -1) {
-      print('[TTS_SERVICE] ⚠️ Pedido $pedidoId não encontrado');
+  /// 🔥 Fala um texto avulso (sem pedido)
+  Future<void> speakText(String text) async {
+    if (text.isEmpty || _isMuted) return;
+
+    // Se não está falando e não tem fila, fala diretamente
+    if (!_isSpeaking && _pendingIds.isEmpty) {
+      _isSpeaking = true;
+      try {
+        await _impl!.speak(text);
+      } catch (_) {
+        // Ignora erro
+      } finally {
+        _isSpeaking = false;
+      }
       return;
     }
 
-    print('[TTS_SERVICE] ❌ Removendo pedido $pedidoId');
-
-    _pendingIds.removeAt(index);
-    _alerts.remove(pedidoId);
-
-    // 🔥 AJUSTA O ÍNDICE
-    if (_pendingIds.isEmpty) {
-      _currentIndex = 0;
-      _stopLoop();
-      _stopSpeaking();
-      print('[TTS_SERVICE] 🔇 Último pedido removido, loop parado');
-    } else if (_currentIndex >= _pendingIds.length) {
-      _currentIndex = _pendingIds.length - 1;
-    }
+    // Se está ocupado, adiciona como alerta temporário (ID 0)
+    _pendingIds.add(0);
+    _alerts[0] = text;
+    if (!_isLooping) _startLoop();
   }
 
   void clearAlerts() {
-    print('[TTS_SERVICE] 🧹 Limpando tudo');
-    _pendingIds = [];
-    _alerts = {};
+    _pendingIds.clear();
+    _alerts.clear();
     _currentIndex = 0;
-    _stopLoop();
-    _stopSpeaking();
+    _stopAll();
   }
 
-  // ==================== MÉTODOS INTERNOS ====================
+  // ════════════════════════════════════════════════
+  //  LOOP PRINCIPAL
+  // ════════════════════════════════════════════════
 
   void _startLoop() {
-    if (_isLooping) return;
-    if (_isMuted) return;
-    if (_pendingIds.isEmpty) return;
-
+    if (_isLooping || _isMuted || _pendingIds.isEmpty) return;
     _isLooping = true;
-    print('[TTS_SERVICE] 🔄 Loop iniciado (${_pendingIds.length} pedidos)');
     _processLoop();
   }
 
   void _processLoop() {
-    if (_pendingIds.isEmpty || _isMuted) {
-      _stopLoop();
-      return;
-    }
-
+    if (_pendingIds.isEmpty || _isMuted) { _stopAll(); return; }
     if (_isSpeaking) return;
+    if (_currentIndex >= _pendingIds.length) _currentIndex = 0;
 
-    // 🔥 GARANTE ÍNDICE VÁLIDO
-    if (_currentIndex >= _pendingIds.length) {
-      _currentIndex = _pendingIds.length - 1;
-    }
-    if (_currentIndex < 0) {
-      _currentIndex = 0;
-    }
-
-    final pedidoId = _pendingIds[_currentIndex];
-    final text = _alerts[pedidoId];
-
+    final id = _pendingIds[_currentIndex];
+    final text = _alerts[id];
     if (text == null || text.isEmpty) {
       _pendingIds.removeAt(_currentIndex);
-      _alerts.remove(pedidoId);
-      if (_pendingIds.isEmpty) {
-        _stopLoop();
-        return;
-      }
-      if (_currentIndex >= _pendingIds.length) {
-        _currentIndex = _pendingIds.length - 1;
-      }
+      _alerts.remove(id);
       _processLoop();
       return;
     }
 
-    // 🔥 FALA
     _isSpeaking = true;
-    print('[TTS_SERVICE] 🔊 Falando pedido $pedidoId: "$text"');
-
-    _impl!
-        .speak(text)
-        .then((_) {
+    _impl!.speak(text).then((_) {
       _isSpeaking = false;
-      print('[TTS_SERVICE] ✅ Terminou pedido $pedidoId');
-
-      // 🔥 AVANÇA ÍNDICE
-      _currentIndex++;
-      if (_currentIndex >= _pendingIds.length) {
-        _currentIndex = 0;
-      }
-
-      print('[TTS_SERVICE] ⏳ Próximo índice: $_currentIndex');
-
-      // 🔥 DELAY DE 4 SEGUNDOS APÓS A FALA
-      _loopTimer?.cancel();
+      _currentIndex = (_currentIndex + 1) % _pendingIds.length;
       _loopTimer = Timer(const Duration(seconds: 2), () {
         if (_pendingIds.isNotEmpty && !_isMuted) {
           if (kIsWeb) onUserInteraction();
           _processLoop();
-        } else {
-          _stopLoop();
-        }
+        } else _stopAll();
       });
-    })
-        .catchError((e) {
-      print('[TTS_SERVICE] ❌ Erro: $e');
+    }).catchError((_) {
       _isSpeaking = false;
-      _currentIndex++;
-      if (_currentIndex >= _pendingIds.length) {
-        _currentIndex = 0;
-      }
-      _loopTimer?.cancel();
-      _loopTimer = Timer(const Duration(seconds: 2), () {
-        if (_pendingIds.isNotEmpty) {
-          _processLoop();
-        } else {
-          _stopLoop();
-        }
-      });
+      _currentIndex = (_currentIndex + 1) % _pendingIds.length;
+      _loopTimer = Timer(const Duration(seconds: 2), () => _processLoop());
     });
   }
 
-  void _stopLoop() {
+  void _stopAll() {
     _isLooping = false;
     _loopTimer?.cancel();
     _loopTimer = null;
-    print('[TTS_SERVICE] ⏹️ Loop parado');
+    if (_isSpeaking) { _impl?.stopAndClear(); _isSpeaking = false; }
   }
 
-  void _stopSpeaking() {
-    if (_isSpeaking) {
-      _impl?.stopAndClear();
-      _isSpeaking = false;
-      print('[TTS_SERVICE] 🛑 Fala interrompida');
-    }
+  // ════════════════════════════════════════════════
+  //  CONTROLES EXTERNOS
+  // ════════════════════════════════════════════════
+
+  Future<void> setMuted(bool muted) async {
+    _isMuted = muted;
+    try { await GetIt.I<TtsConfigService>().setTtsEnabled(!muted); } catch (_) {}
+    if (muted) _stopAll();
+    else if (_pendingIds.isNotEmpty) _startLoop();
   }
 
-  // ==================== MÉTODOS DESATIVADOS ====================
-
-  void addAlert(int pedidoId, String text) {
-    print('[TTS_SERVICE] ⚠️ addAlert DESATIVADO');
-  }
-
-  void filterAlerts(List<int> ids) {
-    print('[TTS_SERVICE] ⚠️ filterAlerts DESATIVADO');
-  }
-
-  void removeAlert(String text) {
-    print('[TTS_SERVICE] ⚠️ removeAlert DESATIVADO');
-  }
-
-  // ==================== GETTERS ====================
+  Future<bool> toggleMute() async { await setMuted(!_isMuted); return _isMuted; }
 
   bool get isLooping => _isLooping;
   int get pendingAlertsCount => _pendingIds.length;
@@ -257,52 +173,12 @@ class TtsService {
   bool get isSpeaking => _isSpeaking;
   List<int> get pendingPedidoIds => List.from(_pendingIds);
 
-  Future<void> setMuted(bool muted) async {
-    _isMuted = muted;
-    try {
-      final configService = GetIt.I<TtsConfigService>();
-      await configService.setTtsEnabled(!muted);
-    } catch (_) {}
-
-    print('[TTS_SERVICE] Mudo: $_isMuted');
-
-    if (_isMuted) {
-      _stopSpeaking();
-      _stopLoop();
-    } else if (_pendingIds.isNotEmpty) {
-      if (kIsWeb) onUserInteraction();
-      _startLoop();
-    }
-  }
-
-  Future<bool> toggleMute() async {
-    final newMuted = !_isMuted;
-    await setMuted(newMuted);
-    return _isMuted;
-  }
-
-  Future<void> stopAndClear() async {
-    _stopSpeaking();
-    _stopLoop();
-    _pendingIds = [];
-    _alerts = {};
-    _currentIndex = 0;
-    await _impl?.stopAndClear();
-  }
-
-  void dispose() {
-    _stopSpeaking();
-    _stopLoop();
-    _pendingIds = [];
-    _alerts = {};
-    _impl?.dispose();
-  }
+  void dispose() { _stopAll(); _pendingIds.clear(); _alerts.clear(); _impl?.dispose(); }
 }
 
 /// Item para compatibilidade
 class AlertItem {
   final int pedidoId;
   final String text;
-
   AlertItem({required this.pedidoId, required this.text});
 }

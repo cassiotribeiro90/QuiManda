@@ -9,13 +9,28 @@ import '../../../core/services/storage_service.dart';
 import '../../../di/dependencies.dart';
 import '../../store/bloc/store_cubit.dart';
 import '../model/auth_response_model.dart';
+import '../../../core/services/fcm_service.dart';
+import '../../../core/services/device_service.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
   final TokenService _tokenService;
   final StorageService _storageService;
+  final FcmService _fcmService;
+  final DeviceService _deviceService;
   
-  AuthCubit(this._authService, this._tokenService, this._storageService) : super(AuthInitial());
+  AuthCubit({
+    required AuthService authService,
+    required TokenService tokenService,
+    required StorageService storageService,
+    required FcmService fcmService,
+    required DeviceService deviceService,
+  }) : _authService = authService,
+       _tokenService = tokenService,
+       _storageService = storageService,
+       _fcmService = fcmService,
+       _deviceService = deviceService,
+       super(AuthInitial());
 
   Future<void> checkAuthStatus() async {
     final token = await _storageService.getToken();
@@ -84,7 +99,14 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       print('[AUTH_CUBIT] Verificando OTP para $telefone');
       final telLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
-      final response = await _authService.verifyOtp(telLimpo, codigo);
+      
+      // 🔥 OBTÉM O FCM TOKEN
+      final fcmToken = _fcmService.token;
+      
+      // 🔥 OBTÉM O DEVICE ID
+      final deviceId = await _deviceService.getDeviceId();
+
+      final response = await _authService.verifyOtp(telLimpo, codigo, deviceId: deviceId, deviceToken: fcmToken);
       
       if (response['success'] == true) {
         print('[AUTH_CUBIT] OTP verificado com sucesso');
@@ -98,6 +120,9 @@ class AuthCubit extends Cubit<AuthState> {
         await _storageService.saveUserData(response['data']['lojista']);
         await _tokenService.saveTokens(token, refreshToken);
         await _tokenService.saveLojista(response['data']['lojista']);
+
+        // 🔥 ENVIA DEVICE TOKEN (garantia se não foi no request inicial)
+        await _fcmService.sendTokenToBackend();
 
         print('[AUTH_CUBIT] Dados de autenticação salvos. Lojas recebidas: ${authData.lojas.length}');
 
@@ -119,7 +144,14 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       print('[AUTH_CUBIT] Tentando login para $email');
-      final response = await _authService.login(email, senha);
+      
+      // 🔥 OBTÉM O FCM TOKEN
+      final fcmToken = _fcmService.token;
+
+      // 🔥 OBTÉM O DEVICE ID
+      final deviceId = await _deviceService.getDeviceId();
+
+      final response = await _authService.login(email, senha, deviceId: deviceId, deviceToken: fcmToken);
       if (response['success'] == true) {
         print('[AUTH_CUBIT] Login bem-sucedido');
         final authData = AuthResponse.fromJson(response);
@@ -134,6 +166,9 @@ class AuthCubit extends Cubit<AuthState> {
         await _storageService.saveUserData(response['data']['lojista']);
         await _tokenService.saveTokens(token, refreshToken ?? '');
         await _tokenService.saveLojista(response['data']['lojista']);
+
+        // 🔥 ENVIA DEVICE TOKEN (garantia)
+        await _fcmService.sendTokenToBackend();
 
         print('[AUTH_CUBIT] Dados de login salvos. Lojas recebidas: ${authData.lojas.length}');
 
@@ -153,9 +188,13 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> logout() async {
     try {
+      // 🔥 REMOVE O DEVICE TOKEN DO BACKEND
+      await _fcmService.removeTokenFromBackend();
       await _authService.logout();
     } catch (_) {}
     
+    // 🔥 LIMPA O DEVICE_ID LOCAL
+    await _deviceService.clearDeviceId();
     await _storageService.clearAll();
     await _tokenService.clear();
     await getIt<StoreCubit>().clear();

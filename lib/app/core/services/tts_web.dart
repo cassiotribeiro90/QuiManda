@@ -144,7 +144,6 @@ class TtsWeb implements TtsInterface {
 
     print('[TTS_WEB] 🔊 Falando: "$cleanText"');
 
-    // 🔥 COMPLETER PARA AGUARDAR O FIM DA FALA
     final completer = Completer<void>();
 
     try {
@@ -191,13 +190,14 @@ class TtsWeb implements TtsInterface {
         print('[TTS_WEB] ⚠️ Nenhuma voz disponível');
       }
 
-      // 🔥 HANDLERS COM COMPLETER
-      utterance.addEventListener('start', (_) {
+      // 🔥 CORREÇÃO: Usar addEventListener em vez de setters diretos
+      // Os eventos são registrados via JS interop com addEventListener
+      utterance.addEventListener('start', (JSAny? event) {
         _isSpeaking = true;
         print('[TTS_WEB] 🔊 Iniciou fala');
       }.toJS);
 
-      utterance.addEventListener('end', (_) {
+      utterance.addEventListener('end', (JSAny? event) {
         _isSpeaking = false;
         print('[TTS_WEB] ✅ Fala finalizada');
         if (!completer.isCompleted) {
@@ -205,7 +205,7 @@ class TtsWeb implements TtsInterface {
         }
       }.toJS);
 
-      utterance.addEventListener('error', (_) {
+      utterance.addEventListener('error', (JSAny? event) {
         _isSpeaking = false;
         print('[TTS_WEB] ❌ Erro na fala');
         if (!completer.isCompleted) {
@@ -215,7 +215,6 @@ class TtsWeb implements TtsInterface {
 
       _speechSynthesis!.speak(utterance);
 
-      // 🔥 AGUARDA O FIM DA FALA
       await completer.future;
     } catch (e) {
       _isSpeaking = false;

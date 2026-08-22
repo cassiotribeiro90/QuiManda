@@ -5,19 +5,45 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="QuiManda - Gestão de Pedidos">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="quimanda">
+  <meta name="apple-mobile-web-app-title" content="QuiManda">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>quimanda</title>
+  <title>QuiManda</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- 🔥 FIREBASE - Dependências -->
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging-compat.js"></script>
+
+  <!-- 🔥 REGISTRA O SERVICE WORKER DO FCM -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then(function(registration) {
+            console.log('✅ Service Worker registrado:', registration.scope);
+          })
+          .catch(function(err) {
+            console.warn('❌ Erro ao registrar Service Worker:', err);
+          });
+      });
+    }
+
+    // Verifica se o Firebase está disponível
+    if (typeof firebase !== 'undefined') {
+      console.log('✅ Firebase disponível');
+    } else {
+      console.warn('⚠️ Firebase não disponível');
+    }
+  </script>
 
   <!-- 🔥 SPEECHSYNTHESIS - VERSÃO INTELIGENTE -->
   <script>
@@ -62,11 +88,14 @@
         }, { once: true });
 
         console.log('✅ SpeechSynthesis inicializado');
+      } else {
+        console.warn('⚠️ SpeechSynthesis NÃO disponível');
       }
     })();
   </script>
+
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+<script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

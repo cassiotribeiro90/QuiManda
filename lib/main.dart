@@ -17,6 +17,8 @@ import 'app/routes/app_routes.dart';
 
 import 'app/modules/home/cubit/home_cubit.dart';
 import 'app/core/api_client.dart';
+import 'app/core/services/fcm_service.dart';
+import 'app/core/navigation/navigation_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -25,6 +27,10 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await setupDependencies();
+  
+  // 🔥 INICIALIZA FCM
+  await getIt<FcmService>().init();
+  
   runApp(const QuiMandaApp());
 }
 
@@ -50,10 +56,13 @@ class QuiMandaApp extends StatelessWidget {
         title: 'QuiManda',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
-        navigatorKey: ApiClient.navigatorKey,
+        navigatorKey: NavigationService.navigatorKey,
         initialRoute: AppRoutes.splash,
         routes: AppRoutes.routes,
         builder: (context, child) {
+          // 🔥 PASSA O CONTEXTO PARA O FCM PARA MOSTRAR OVERLAYS
+          FcmService().context = context;
+
           return BlocListener<AuthCubit, AuthState>(
             listener: (context, state) {
               if (state is AuthUnauthenticated) {

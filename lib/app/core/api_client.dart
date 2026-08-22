@@ -5,9 +5,10 @@ import '../services/token_service.dart';
 import 'interceptors/refresh_interceptor.dart';
 import 'constants.dart';
 import 'storage/store_storage.dart';
+import 'navigation/navigation_service.dart';
 
 class ApiClient {
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static GlobalKey<NavigatorState> get navigatorKey => NavigationService.navigatorKey;
   
   late final Dio dio;
   final TokenService _tokenService;

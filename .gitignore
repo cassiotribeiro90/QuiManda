@@ -43,3 +43,4 @@
 /linux/flutter/
 /linux/out/
 .flutter-plugins-dependencies
+lib/firebase_options.dart

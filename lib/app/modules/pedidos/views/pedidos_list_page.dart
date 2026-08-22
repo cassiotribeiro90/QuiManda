@@ -28,13 +28,11 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
-    // Carregar pedidos ao entrar na tela
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _carregarPedidos();
     });
-    
-    // 🔥 Iniciar timer para refresh automático (a cada 30 segundos)
+
     _iniciarTimer();
   }
 
@@ -48,7 +46,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // 🔥 Recarregar quando o app voltar para o foreground
     if (state == AppLifecycleState.resumed) {
       _refreshSilencioso();
     }
@@ -67,7 +64,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
     context.read<PedidosCubit>().carregarPedidosAtivos();
   }
 
-  // 🔥 Refresh silencioso (sem perder scroll)
   Future<void> _refreshSilencioso() async {
     if (_isRefreshing) return;
     _isRefreshing = true;
@@ -75,12 +71,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
     if (mounted) _isRefreshing = false;
   }
 
-  // 🔥 Refresh com pull-to-refresh
   Future<void> _onRefresh() async {
     await context.read<PedidosCubit>().refresh();
   }
 
-  // 🔥 Refresh manual (botão)
   void _onManualRefresh() {
     if (_isRefreshing) return;
     _isRefreshing = true;
@@ -126,17 +120,17 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
         ),
         leading: MediaQuery.of(context).size.width < 900
             ? IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-              )
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
+        )
             : null,
         actions: [
-          // 🔥 INDICADOR DE LOOP (exibe quando está repetindo alertas)
+          // 🔥 INDICADOR DE LOOP
           BlocBuilder<PedidosCubit, PedidosState>(
             builder: (context, state) {
               final isLooping = context.read<PedidosCubit>().isTtsLooping;
               final pendingCount = context.read<PedidosCubit>().pendingAlertsCount;
-              
+
               if (isLooping && pendingCount > 0) {
                 return Container(
                   margin: const EdgeInsets.only(right: 8),
@@ -183,11 +177,9 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 ),
                 tooltip: isMuted ? 'Ativar som' : 'Desativar som',
                 onPressed: () {
-                  // 🔥 Registra interação do usuário para habilitar áudio (especialmente Web)
                   context.read<PedidosCubit>().registerUserInteraction();
                   context.read<PedidosCubit>().toggleTtsMute();
-                  
-                  // Feedback visual
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(isMuted ? '🔊 Som ativado' : '🔇 Som desativado'),
@@ -199,7 +191,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
               );
             },
           ),
-          // 🔥 Indicador de refresh silencioso
+          // 🔥 Botão de refresh
           BlocBuilder<PedidosCubit, PedidosState>(
             builder: (context, state) {
               if (state is PedidosLoaded && state.isLoading) {
@@ -226,24 +218,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // 🔥 SIMULA UM NOVO PEDIDO PARA TESTAR TTS
-          final pedido = PedidoModel(
-            id: 999,
-            clienteNome: 'João Silva',
-            lojaId: 1,
-            status: 'novo',
-            total: 50.0,
-            itens: [
-              PedidoItemModel(nome: 'Pizza Calabresa', quantidade: 1, precoUnitario: 35.0, total: 35.0),
-              PedidoItemModel(nome: 'Coca-cola 2L', quantidade: 2, precoUnitario: 7.5, total: 15.0),
-            ],
-          );
-          context.read<PedidosCubit>().onNovoPedido(pedido);
-        },
-        child: const Icon(Icons.volume_up),
-      ),
+      // 🔥 REMOVIDO O FLOATINGACTIONBUTTON
       body: BlocConsumer<PedidosCubit, PedidosState>(
         listener: (context, state) {
           if (state is PedidoActionError) {
@@ -253,7 +228,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
           }
         },
         builder: (context, state) {
-          // 🔥 Estado de carregamento inicial (apenas na primeira vez ou refresh manual)
           if (state is PedidosLoading && state is! PedidosLoaded) {
             return const Center(
               child: Column(
@@ -267,7 +241,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
             );
           }
 
-          // 🔥 Estado de erro
           if (state is PedidosError && state is! PedidosLoaded) {
             return Center(
               child: Column(
@@ -295,7 +268,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
             );
           }
 
-          // 🔥 Estado carregado
           if (state is PedidosLoaded) {
             if (state.totalPedidos == 0) {
               return RefreshIndicator(
@@ -314,12 +286,12 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 20),
                 children: state.grupos.map((grupo) => PedidoStatusSection(
-                  key: ValueKey('section_${grupo.status}'), // 🔥 Key preserva estado
+                  key: ValueKey('section_${grupo.status}'),
                   status: grupo.status,
                   label: grupo.label,
                   total: grupo.total,
                   pedidos: grupo.itens,
-                  updatingPedidoId: state.updatingPedidoId, // 🔥 Passa o ID em atualização
+                  updatingPedidoId: state.updatingPedidoId,
                   onAceitar: (id) => context.read<PedidosCubit>().aceitarPedido(id),
                   onRecusar: (id) => _mostrarMotivoRecusa(context, id),
                   onAtualizarStatus: (id, novoStatus) =>
@@ -491,7 +463,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 children: codigos.map((codigo) {
                   return ChoiceChip(
                     label: Text(_getMotivoLabel(codigo)),
-                    selected: false, 
+                    selected: false,
                     onSelected: (selected) {
                       motivoController.text = codigo;
                     },

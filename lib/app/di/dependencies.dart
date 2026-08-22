@@ -28,6 +28,8 @@ import '../modules/configuracoes/bloc/configuracoes_cubit.dart';
 import '../core/storage/store_storage.dart';
 import '../modules/store/bloc/store_cubit.dart';
 import '../core/services/tts_config_service.dart';
+import '../core/services/fcm_service.dart';
+import '../core/services/device_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -38,6 +40,7 @@ Future<void> setupDependencies() async {
   // Services
   getIt.registerLazySingleton<StorageService>(() => StorageService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TtsConfigService>(() => TtsConfigService(getIt<SharedPreferences>()));
+  getIt.registerLazySingleton<DeviceService>(() => DeviceService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<StoreStorage>(() => StoreStorage(getIt<SharedPreferences>()));
   
@@ -48,12 +51,24 @@ Future<void> setupDependencies() async {
     getIt<StoreStorage>(),
   ));
 
+  getIt.registerLazySingleton<FcmService>(() {
+    final fcm = FcmService();
+    fcm.setDependencies(getIt<ApiClient>(), getIt<DeviceService>());
+    return fcm;
+  });
+
   // Home
   getIt.registerFactory<HomeCubit>(() => HomeCubit());
 
   // Auth
   getIt.registerLazySingleton<AuthService>(() => AuthService(getIt<ApiClient>()));
-  getIt.registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthService>(), getIt<TokenService>(), getIt<StorageService>()));
+  getIt.registerFactory<AuthCubit>(() => AuthCubit(
+    authService: getIt<AuthService>(), 
+    tokenService: getIt<TokenService>(), 
+    storageService: getIt<StorageService>(), 
+    fcmService: getIt<FcmService>(),
+    deviceService: getIt<DeviceService>(),
+  ));
 
 
   // Dashboard

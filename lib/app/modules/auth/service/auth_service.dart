@@ -17,20 +17,40 @@ class AuthService {
 
   /// Verifica OTP e autentica o lojista
   /// POST /api/lojista/auth-lojista/verify-otp
-  Future<Map<String, dynamic>> verifyOtp(String telefone, String codigo) async {
+  Future<Map<String, dynamic>> verifyOtp(String telefone, String codigo, {String? deviceId, String? deviceToken}) async {
+    final data = {
+      'phone': telefone,
+      'code': codigo,
+    };
+    if (deviceId != null) {
+      data['device_id'] = deviceId;
+    }
+    if (deviceToken != null) {
+      data['device_token'] = deviceToken;
+    }
     final response = await _apiClient.dio.post(
       '/api/lojista/auth-lojista/verify-otp',
-      data: {'phone': telefone, 'code': codigo},
+      data: data,
     );
     return response.data;
   }
 
   /// Login com email e senha (fallback)
   /// POST /api/lojista/auth-lojista/login
-  Future<Map<String, dynamic>> login(String email, String senha) async {
+  Future<Map<String, dynamic>> login(String email, String senha, {String? deviceId, String? deviceToken}) async {
+    final data = {
+      'email': email,
+      'senha': senha,
+    };
+    if (deviceId != null) {
+      data['device_id'] = deviceId;
+    }
+    if (deviceToken != null) {
+      data['device_token'] = deviceToken;
+    }
     final response = await _apiClient.dio.post(
       '/api/lojista/auth-lojista/login',
-      data: {'email': email, 'senha': senha},
+      data: data,
     );
     return response.data;
   }
