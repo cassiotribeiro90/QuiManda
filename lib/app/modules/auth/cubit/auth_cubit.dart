@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_state.dart';
@@ -100,8 +101,11 @@ class AuthCubit extends Cubit<AuthState> {
       print('[AUTH_CUBIT] Verificando OTP para $telefone');
       final telLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
       
-      // 🔥 OBTÉM O FCM TOKEN
-      final fcmToken = _fcmService.token;
+      // 🔥 OBTÉM O FCM TOKEN (PROTEGIDO PARA WINDOWS)
+      String? fcmToken;
+      if (kIsWeb || !Platform.isWindows) {
+        fcmToken = _fcmService.token;
+      }
       
       // 🔥 OBTÉM O DEVICE ID
       final deviceId = await _deviceService.getDeviceId();
@@ -145,8 +149,11 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       print('[AUTH_CUBIT] Tentando login para $email');
       
-      // 🔥 OBTÉM O FCM TOKEN
-      final fcmToken = _fcmService.token;
+      // 🔥 OBTÉM O FCM TOKEN (PROTEGIDO PARA WINDOWS)
+      String? fcmToken;
+      if (kIsWeb || !Platform.isWindows) {
+        fcmToken = _fcmService.token;
+      }
 
       // 🔥 OBTÉM O DEVICE ID
       final deviceId = await _deviceService.getDeviceId();

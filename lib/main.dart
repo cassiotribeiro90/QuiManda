@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,9 +25,16 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  
+  // 🔥 INICIALIZA FIREBASE APENAS EM PLATAFORMAS SUPORTADAS (OU COM OPÇÕES CORRETAS)
+  if (kIsWeb || !Platform.isWindows) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    debugPrint('[MAIN] ⏳ Ignorando Firebase.initializeApp no Windows');
+  }
+  
   await setupDependencies();
   
   // 🔥 INICIALIZA FCM

@@ -1,5 +1,9 @@
 # Project-level configuration.
-cmake_minimum_required(VERSION 3.14)
+# 🔥 FORÇAR COMPATIBILIDADE COM CMAKE 3.5+
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+set(CMAKE_MINIMUM_REQUIRED_VERSION 3.10)
+
+cmake_minimum_required(VERSION 3.10)
 project(quimanda LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,10 @@ class FcmService {
 
   ApiClient? _apiClient;
   DeviceService? _deviceService;
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  
+  // 🔥 OBTER INSTÂNCIA APENAS QUANDO NECESSÁRIO (NÃO NO WINDOWS)
+  FirebaseMessaging get _fcm => FirebaseMessaging.instance;
+  
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   
   bool _isInitialized = false;
@@ -35,6 +39,13 @@ class FcmService {
 
   /// 🔥 INICIALIZA O FCM
   Future<void> init() async {
+
+    // 🔥 SÓ INICIALIZA SE NÃO FOR WINDOWS
+    if (!kIsWeb && Platform.isWindows) {
+      debugPrint('[FCM] ⏳ Windows não suporta Firebase Messaging');
+      return;
+    }
+
     if (_isInitialized) return;
 
     try {
@@ -242,8 +253,15 @@ class FcmService {
 
   /// 🔥 ENVIA TOKEN PARA O BACKEND
   Future<void> sendTokenToBackend() async {
+    if (!kIsWeb && Platform.isWindows) return;
+
     if (_token == null) {
-      _token = await _fcm.getToken();
+      try {
+        _token = await _fcm.getToken();
+      } catch (e) {
+        debugPrint('[FCM] ❌ Erro ao obter token: $e');
+        return;
+      }
     }
     
     if (_token == null || _apiClient == null || _deviceService == null) return;
@@ -265,6 +283,7 @@ class FcmService {
 
   /// 🔥 REMOVE O TOKEN
   Future<void> removeTokenFromBackend() async {
+    if (!kIsWeb && Platform.isWindows) return;
     if (_apiClient == null) return;
     try {
       await _apiClient!.delete('/api/lojista/auth-lojista/device-token');
