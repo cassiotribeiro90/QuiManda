@@ -65,7 +65,6 @@ class AppRouterListener extends StatelessWidget {
             } else if (state is AuthUnauthenticated) {
               debugPrint('❌ [LISTENER] Usuário não autenticado');
               
-              // Só redireciona para login se não estiver já no login ou onboarding ou splash
               String? currentLocation;
               final routerContext = rootNavigatorKey.currentContext;
               if (routerContext != null) {
@@ -74,10 +73,15 @@ class AppRouterListener extends StatelessWidget {
                 } catch (_) {}
               }
               
-              final publicRoutes = ['/phone-input', '/otp-verify', '/onboarding', '/'];
-              if (currentLocation != null && !publicRoutes.any((route) => currentLocation!.startsWith(route))) {
+              // Se está na Splash (/), Onboarding ou qualquer rota protegida, redireciona
+              final publicRoutes = ['/phone-input', '/otp-verify', '/onboarding'];
+              
+              if (currentLocation == '/' || currentLocation == '/splash') {
+                debugPrint('🚀 [LISTENER] Saindo da Splash -> Indo para Onboarding');
+                nav.goToOnboarding();
+              } else if (currentLocation != null && !publicRoutes.any((route) => currentLocation!.startsWith(route))) {
                  debugPrint('🔐 [LISTENER] Rota protegida detectada sem auth -> Indo para Login');
-                 nav.goToPhoneInput();
+                 nav.goToLogin();
               } else {
                  debugPrint('✅ [LISTENER] Mantendo em rota pública: $currentLocation');
               }

@@ -29,8 +29,15 @@ class NavigationCubit extends Cubit<NavigationState> {
   
   // Autenticação e Onboarding
   void goToPhoneInput() => go('/phone-input');
+  void goToLogin() {
+    debugPrint('🔐 [NAVIGATION] Redirecionando para Login');
+    go('/phone-input');
+  }
   void goToOtpVerify(String telefone) => go('/otp-verify', extra: {'telefone': telefone});
-  void goToOnboarding() => go('/onboarding');
+  void goToOnboarding() {
+    debugPrint('📖 [NAVIGATION] Redirecionando para Onboarding');
+    go('/onboarding');
+  }
   void goToStoreSelection() => go('/store-selection');
   
   // Shell Modules (Usa go para atualizar a URL e refletir no SideMenu)

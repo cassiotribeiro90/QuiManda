@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/api_client.dart';
 
 class AuthService {
@@ -58,11 +60,25 @@ class AuthService {
   /// Refresh token
   /// POST /api/lojista/auth-lojista/refresh-token
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
-    final response = await _apiClient.dio.post(
-      '/api/lojista/auth-lojista/refresh-token',
-      data: {'refresh_token': refreshToken},
-    );
-    return response.data;
+    debugPrint('🔄 [AUTH_SERVICE] Chamando refresh-token...');
+    try {
+      final response = await _apiClient.dio.post(
+        '/api/lojista/auth-lojista/refresh-token',
+        data: {'refresh_token': refreshToken},
+        options: Options(
+          // ⚠️ IMPORTANTE: Remove o Authorization header para evitar loop com token expirado
+          headers: {
+            'Authorization': null,
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      debugPrint('✅ [AUTH_SERVICE] Resposta do refresh-token recebida');
+      return response.data;
+    } catch (e) {
+      debugPrint('❌ [AUTH_SERVICE] Erro na chamada de refresh-token: $e');
+      rethrow;
+    }
   }
 
   /// Logout

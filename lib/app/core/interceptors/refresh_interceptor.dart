@@ -2,7 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/token_service.dart';
-
+import '../../modules/auth/cubit/auth_cubit.dart';
+import '../../di/dependencies.dart';
 
 class RefreshInterceptor extends Interceptor {
   final Dio dio;
@@ -16,52 +17,53 @@ class RefreshInterceptor extends Interceptor {
   });
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    debugPrint('🌐 [API] Requisição: ${options.method} ${options.path}');
-    super.onRequest(options, handler);
-  }
-
-  @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint('✅ [API] Resposta: ${response.statusCode} ${response.requestOptions.path}');
-    super.onResponse(response, handler);
-  }
-
-  @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     // Se o erro for 401 (Não autorizado) e não for na rota de login ou refresh
-    if (err.response?.statusCode == 401 && 
-        !err.requestOptions.path.contains('auth-lojista/login') &&
-        !err.requestOptions.path.contains('auth-lojista/refresh-token')) {
-      
-      debugPrint('⚠️ [API] Token expirado (401) em ${err.requestOptions.path} - Tentando refresh...');
-      final refreshToken = tokenService.getRefreshToken();
+    if (err.response?.statusCode == 401) {
+      final requestPath = err.requestOptions.path;
+      debugPrint('⚠️ [API] Token expirado (401) em $requestPath');
 
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        try {
-          // Tenta renovar o token
-          final success = await tokenService.refreshTokens(dio);
+      // ⚠️ NÃO tenta refresh em rotas de autenticação
+      if (requestPath.contains('auth-lojista/login') ||
+          requestPath.contains('auth-lojista/refresh-token') ||
+          requestPath.contains('auth-lojista/verify-otp') ||
+          requestPath.contains('auth-lojista/phone')) {
+        debugPrint('⛔ [API] Rota de autenticação - não faz refresh');
+        return handler.next(err);
+      }
 
-          if (success) {
-            debugPrint('🔄 [API] Refresh token realizado com sucesso. Repetindo requisição...');
-            // Repete a requisição original com o novo token
-            final newToken = tokenService.getAccessToken();
-            
+      // 🔥 TENTA REFRESH VIA AUTH_CUBIT
+      try {
+        final authCubit = getIt<AuthCubit>();
+        final success = await authCubit.refreshToken();
+
+        if (success) {
+          debugPrint('✅ [API] Refresh bem-sucedido, reexecutando requisição...');
+          
+          final newToken = await tokenService.getAccessToken();
+          if (newToken != null) {
+            // Atualiza o header da requisição original
             final options = err.requestOptions;
             options.headers['Authorization'] = 'Bearer $newToken';
 
+            // Reexecuta a requisição
             final response = await dio.fetch(options);
             return handler.resolve(response);
           }
-        } catch (e) {
-          debugPrint('❌ [API] Erro ao tentar renovar token: $e');
         }
+      } catch (e) {
+        debugPrint('❌ [API] Erro ao tentar renovar token: $e');
       }
 
-      debugPrint('❌ [API] Falha no refresh ou token ausente. Redirecionando para login.');
-      // Se falhar o refresh ou não houver refresh token, desloga e manda para o login
-      await tokenService.clear();
+      debugPrint('❌ [API] Falha no refresh - redirecionando para login');
+      // Se falhar o refresh, desloga via AuthCubit
+      try {
+        await getIt<AuthCubit>().logout();
+      } catch (_) {
+        await tokenService.clear();
+      }
       _redirectToLogin();
+      return handler.next(err);
     }
 
     debugPrint('❌ [API] Erro: ${err.message} (${err.response?.statusCode})');
@@ -73,6 +75,7 @@ class RefreshInterceptor extends Interceptor {
     if (context != null) {
       debugPrint('🔐 [AUTH] Redirecionando para login via GoRouter');
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Usa go para limpar a pilha
         context.go('/phone-input');
       });
     }
