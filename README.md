@@ -6,6 +6,12 @@
 ---
 
 ## Screenshots
+<img width="150"  alt="image" src="https://github.com/user-attachments/assets/aa32652b-99e7-40fe-9ef7-9e189668c2be" />
+<img width="150"  alt="image" src="https://github.com/user-attachments/assets/5684871f-927b-478a-b49a-e31c7c46c66b" />
+<img width="150"  alt="image" src="https://github.com/user-attachments/assets/841d75e4-6ba4-4182-b436-441f30bbca43" />
+<img width="150"  alt="image" src="https://github.com/user-attachments/assets/2380fcc0-1add-431e-bc03-77fdb6f4fa91" />
+<img width="150"  alt="image" src="https://github.com/user-attachments/assets/3138d31e-4556-4dc0-8ccf-035856e22be0" />
+<img width="100"  alt="image" src="https://github.com/user-attachments/assets/0f94123b-79fa-4c91-83ec-77cbf785c133" />
 
 ---
 
@@ -253,16 +259,6 @@ dart run server.dart
 
 ---
 
-## Contribuicao
-
-### Como contribuir
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
 ### Padrões de Código
 
 - Use `debugPrint()` em vez de `print()`
@@ -307,14 +303,6 @@ dart run server.dart
 - Módulo de cardápio
 - Integação com API REST
 
----
-
-## 📞 Contato
-
-**Equipe quiManda**
-- **Email:** contato@quimanda.com.br
-- **Website:** https://quimanda.com.br
-- **GitHub:** https://github.com/seu-usuario/quimanda
 
 ---
 
@@ -325,4 +313,4 @@ dart run server.dart
 - GoRouter - Navegação robusta
 - Bloc - Gerenciamento de estado
 
-<div> <sub>Feito com ❤️ pela equipe quiManda</sub> </div>
+<div> <sub>Feito com ❤️ por Cássio</sub> </div>
