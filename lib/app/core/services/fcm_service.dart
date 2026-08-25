@@ -4,8 +4,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 import '../api_client.dart';
-import '../../routes/app_routes.dart';
+import '../../routes/app_router.dart';
 import 'device_service.dart';
 import 'tts_service.dart';
 import '../../modules/pedidos/cubit/pedidos_cubit.dart';
@@ -244,11 +245,14 @@ class FcmService {
 
   /// 🔥 NAVEGAÇÃO
   void _navigateToPedido(String? pedidoId) {
-    // Por enquanto redireciona para dashboard e deixa o cubit carregar
-    ApiClient.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      AppRoutes.dashboard,
-      (route) => false,
-    );
+    debugPrint('🔄 [FCM] Iniciando navegação via notificação. PedidoID: $pedidoId');
+    final context = rootNavigatorKey.currentContext;
+    if (context != null) {
+      debugPrint('🚀 [FCM] Redirecionando para Dashboard via GoRouter');
+      context.go('/dashboard');
+    } else {
+      debugPrint('❌ [FCM] Contexto não encontrado para navegação');
+    }
   }
 
   /// 🔥 ENVIA TOKEN PARA O BACKEND

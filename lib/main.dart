@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:url_strategy/url_strategy.dart';
 import 'app/core/app_theme.dart';
 import 'app/di/dependencies.dart';
 import 'app/modules/auth/cubit/auth_cubit.dart';
-import 'app/modules/auth/cubit/auth_state.dart';
 import 'app/modules/dashboard/cubit/dashboard_cubit.dart';
 import 'app/modules/pedidos/cubit/pedidos_cubit.dart';
 import 'app/modules/produtos/cubit/produtos_cubit.dart';
@@ -15,32 +15,36 @@ import 'app/modules/cardapio/bloc/cardapio_cubit.dart';
 import 'app/modules/onboarding/bloc/onboarding_cubit.dart';
 import 'app/modules/configuracoes/bloc/configuracoes_cubit.dart';
 import 'app/modules/store/bloc/store_cubit.dart';
-import 'app/routes/app_routes.dart';
-
+import 'app/routes/app_router.dart';
+import 'app/navigation/navigation_cubit.dart';
+import 'app/navigation/app_router_listener.dart';
+import 'app/initialization/app_initializer.dart';
 import 'app/modules/home/cubit/home_cubit.dart';
-import 'app/core/api_client.dart';
 import 'app/core/services/fcm_service.dart';
-import 'app/core/navigation/navigation_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
+  debugPrint('🚀 [MAIN] Iniciando aplicação quiManda...');
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 🔥 INICIALIZA FIREBASE APENAS EM PLATAFORMAS SUPORTADAS (OU COM OPÇÕES CORRETAS)
+  setPathUrlStrategy();
+  debugPrint('🌐 [MAIN] URL Strategy configurada');
+  
   if (kIsWeb || !Platform.isWindows) {
+    debugPrint('🔥 [MAIN] Inicializando Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-  } else {
-    debugPrint('[MAIN] ⏳ Ignorando Firebase.initializeApp no Windows');
   }
   
+  debugPrint('📦 [MAIN] Configurando injeção de dependências...');
   await setupDependencies();
   
-  // 🔥 INICIALIZA FCM
+  debugPrint('🔔 [MAIN] Inicializando FCM Service...');
   await getIt<FcmService>().init();
   
   runApp(const QuiMandaApp());
+  debugPrint('✅ [MAIN] App carregado com sucesso');
 }
 
 class QuiMandaApp extends StatelessWidget {
@@ -48,11 +52,13 @@ class QuiMandaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('📱 [MAIN] Construindo QuiMandaApp');
     return MultiBlocProvider(
       providers: [
+        BlocProvider<NavigationCubit>(create: (context) => NavigationCubit()),
         BlocProvider<OnboardingCubit>(create: (context) => getIt<OnboardingCubit>()..checkOnboarding()),
-        BlocProvider<AuthCubit>(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
-        BlocProvider<StoreCubit>(create: (context) => getIt<StoreCubit>()..loadStores()),
+        BlocProvider<AuthCubit>(create: (context) => getIt<AuthCubit>()),
+        BlocProvider<StoreCubit>(create: (context) => getIt<StoreCubit>()),
         BlocProvider<HomeCubit>(create: (context) => getIt<HomeCubit>()),
         BlocProvider<DashboardCubit>(create: (context) => getIt<DashboardCubit>()),
         BlocProvider<PedidosCubit>(create: (context) => getIt<PedidosCubit>()),
@@ -61,30 +67,22 @@ class QuiMandaApp extends StatelessWidget {
         BlocProvider<LojaCubit>(create: (context) => getIt<LojaCubit>()),
         BlocProvider<ConfiguracoesCubit>(create: (context) => getIt<ConfiguracoesCubit>()),
       ],
-      child: MaterialApp(
-        title: 'QuiManda',
-        theme: AppTheme.lightTheme,
-        debugShowCheckedModeBanner: false,
-        navigatorKey: NavigationService.navigatorKey,
-        initialRoute: AppRoutes.splash,
-        routes: AppRoutes.routes,
-        builder: (context, child) {
-          // 🔥 PASSA O CONTEXTO PARA O FCM PARA MOSTRAR OVERLAYS
-          FcmService().context = context;
+      child: AppInitializer(
+        child: MaterialApp.router(
+          title: 'QuiManda',
+          theme: AppTheme.lightTheme,
+          debugShowCheckedModeBanner: false,
+          routerConfig: appRouter,
+          builder: (context, child) {
+            // 🔥 Injeta o contexto no FCM
+            FcmService().context = context;
 
-          return BlocListener<AuthCubit, AuthState>(
-            listener: (context, state) {
-              if (state is AuthUnauthenticated) {
-                // Redireciona para a tela inicial de autenticação
-                ApiClient.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-                  AppRoutes.phoneInput,
-                  (route) => false,
-                );
-              }
-            },
-            child: child!,
-          );
-        },
+            // ⚠️ O AppRouterListener DEVE estar DENTRO do MaterialApp para acessar o GoRouter
+            return AppRouterListener(
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../navigation/navigation_cubit.dart';
 import '../../home/views/home_view.dart';
 import '../bloc/cardapio_cubit.dart';
 import '../bloc/cardapio_state.dart';
 import '../models/produto_model.dart';
 import 'widgets/produto_card.dart';
-import 'formulario_produto_page.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 class CardapioPage extends StatelessWidget {
@@ -14,27 +14,8 @@ class CardapioPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🟢 CardapioPage build');
-    // Navigator aninhado para gerenciar listagem e formulário dentro do container do módulo
-    return Navigator(
-      initialRoute: '/',
-      onGenerateRoute: (settings) {
-        if (settings.name == '/') {
-          return MaterialPageRoute(
-            builder: (_) => const CardapioListView(),
-          );
-        }
-        if (settings.name == '/formulario') {
-          final produto = settings.arguments as ProdutoModel?;
-          return MaterialPageRoute(
-            builder: (_) => FormularioProdutoPage(
-              produto: produto,
-            ),
-          );
-        }
-        return null;
-      },
-    );
+    debugPrint('🍽️ [ROUTER] Construindo CardapioPage (Listagem)');
+    return const CardapioListView();
   }
 }
 
@@ -49,12 +30,14 @@ class _CardapioListViewState extends State<CardapioListView> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🎬 [CardapioListView] initState');
+    debugPrint('🎬 [CARDAPIO] Inicializando listagem de produtos');
     context.read<CardapioCubit>().carregarProdutos();
   }
 
   @override
   Widget build(BuildContext context) {
+    context.read<NavigationCubit>();
+    
     return ResponsiveScaffold(
       maxWidth: 1000,
       appBar: AppBar(
@@ -62,13 +45,19 @@ class _CardapioListViewState extends State<CardapioListView> {
         leading: MediaQuery.of(context).size.width < 900
             ? IconButton(
                 icon: const Icon(Icons.menu),
-                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
+                onPressed: () {
+                  debugPrint('📱 [UI] Abrindo drawer lateral');
+                  HomeView.scaffoldKey.currentState?.openDrawer();
+                },
               )
             : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<CardapioCubit>().carregarProdutos(),
+            onPressed: () {
+              debugPrint('🔄 [UI] Solicitando recarga do cardápio');
+              context.read<CardapioCubit>().carregarProdutos();
+            },
           ),
         ],
       ),
@@ -81,7 +70,7 @@ class _CardapioListViewState extends State<CardapioListView> {
       ),
       body: BlocConsumer<CardapioCubit, CardapioState>(
         listener: (context, state) {
-          debugPrint('📢 [CardapioListView] listener: $state');
+          debugPrint('📢 [CARDAPIO] Mudança de estado: ${state.runtimeType}');
           if (state is CardapioOperationSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message), backgroundColor: Colors.green),
@@ -94,15 +83,12 @@ class _CardapioListViewState extends State<CardapioListView> {
           }
         },
         builder: (context, state) {
-          debugPrint('🏗️ [CardapioListView] builder: $state');
-          
           if ((state is CardapioLoading || state is CardapioInitial) && 
               context.read<CardapioCubit>().produtosAgrupados.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (state is CardapioError && state is! CardapioLoaded) {
-             // Se houver erro mas não tivermos lista carregada
              return _buildErrorState(context, state.message);
           }
 
@@ -123,7 +109,6 @@ class _CardapioListViewState extends State<CardapioListView> {
                 for (var key in keys) {
                   final produtos = grupos[key]!;
                   if (index == accumulated) {
-                    // Seção / Categoria
                     return Container(
                       padding: const EdgeInsets.fromLTRB(8, 32, 16, 12),
                       child: Text(
@@ -141,7 +126,10 @@ class _CardapioListViewState extends State<CardapioListView> {
                         produto: produto,
                         onEdit: () => _abrirFormulario(produto),
                         onDelete: () => _confirmarExclusao(context, produto),
-                        onToggle: (val) => context.read<CardapioCubit>().alternarDisponibilidade(produto.id!, val),
+                        onToggle: (val) {
+                          debugPrint('🔄 [CARDAPIO] Alternando disponibilidade de ${produto.nome} para $val');
+                          context.read<CardapioCubit>().alternarDisponibilidade(produto.id!, val);
+                        },
                       ),
                     );
                   }
@@ -210,23 +198,13 @@ class _CardapioListViewState extends State<CardapioListView> {
     );
   }
 
-  void _abrirFormulario([ProdutoModel? produto]) async {
-    debugPrint('🔜 [CardapioListView] Abrindo formulário...');
-    final result = await Navigator.of(context).pushNamed(
-      '/formulario',
-      arguments: produto,
-    );
-
-    debugPrint('🔙 [CardapioListView] Retorno do formulário: $result');
-    if (result == true) {
-      if (mounted) {
-        debugPrint('🔄 [CardapioListView] Recarregando produtos após sucesso...');
-        context.read<CardapioCubit>().carregarProdutos();
-      }
-    }
+  void _abrirFormulario([ProdutoModel? produto]) {
+    debugPrint('📤 [NAVIGATION] Abrindo formulário de produto. Edição: ${produto != null}');
+    context.read<NavigationCubit>().goToFormularioProduto(produto: produto);
   }
 
   void _confirmarExclusao(BuildContext context, ProdutoModel produto) {
+    debugPrint('⚠️ [UI] Confirmando exclusão de produto: ${produto.nome}');
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -234,16 +212,17 @@ class _CardapioListViewState extends State<CardapioListView> {
         content: Text('Deseja realmente excluir "${produto.nome}"? Esta ação não pode ser desfeita.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () {
+              debugPrint('⬅️ [NAVIGATION] Cancelando exclusão');
+              Navigator.pop(dialogContext);
+            },
             child: const Text('CANCELAR'),
           ),
           ElevatedButton(
             onPressed: () async {
+              debugPrint('❌ [CARDAPIO] Confirmando exclusão de ID: ${produto.id}');
               Navigator.pop(dialogContext);
-              final success = await context.read<CardapioCubit>().deleteProduto(produto.id!);
-              if (success && mounted) {
-                // Success message already shown by listener
-              }
+              await context.read<CardapioCubit>().deleteProduto(produto.id!);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('EXCLUIR'),

@@ -14,10 +14,9 @@ class TtsService {
   TtsInterface? _impl;
   bool _isMuted = false;
   bool _isInitialized = false;
-  bool _isUserInteracted = false;
 
-  List<int> _pendingIds = [];
-  Map<int, String> _alerts = {};
+  final List<int> _pendingIds = [];
+  final Map<int, String> _alerts = {};
   int _currentIndex = 0;
   bool _isLooping = false;
   Timer? _loopTimer;
@@ -34,14 +33,13 @@ class TtsService {
       _impl = TtsFactory.create();
       await _impl!.init();
       _isInitialized = true;
-      print('[TTS] ✅ OK, mudo: $_isMuted');
+      debugPrint('🚀 [TTS] ✅ OK, mudo: $_isMuted');
     } catch (e) {
-      print('[TTS] ❌ Erro: $e');
+      debugPrint('❌ [TTS] ❌ Erro: $e');
     }
   }
 
   void onUserInteraction() {
-    _isUserInteracted = true;
     _impl?.onUserInteraction();
   }
 
@@ -138,7 +136,9 @@ class TtsService {
         if (_pendingIds.isNotEmpty && !_isMuted) {
           if (kIsWeb) onUserInteraction();
           _processLoop();
-        } else _stopAll();
+        } else {
+          _stopAll();
+        }
       });
     }).catchError((_) {
       _isSpeaking = false;
@@ -161,8 +161,9 @@ class TtsService {
   Future<void> setMuted(bool muted) async {
     _isMuted = muted;
     try { await GetIt.I<TtsConfigService>().setTtsEnabled(!muted); } catch (_) {}
-    if (muted) _stopAll();
-    else if (_pendingIds.isNotEmpty) _startLoop();
+    if (muted) {
+      _stopAll();
+    } else if (_pendingIds.isNotEmpty) _startLoop();
   }
 
   Future<bool> toggleMute() async { await setMuted(!_isMuted); return _isMuted; }

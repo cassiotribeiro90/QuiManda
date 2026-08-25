@@ -44,3 +44,8 @@
 /linux/out/
 .flutter-plugins-dependencies
 lib/firebase_options.dart
+
+# Screenshots (placeholders)
+screenshots/*.png
+!screenshots/.gitkeep
+

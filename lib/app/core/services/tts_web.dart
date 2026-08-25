@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 import 'tts_interface.dart';
 
@@ -19,15 +20,15 @@ class TtsWeb implements TtsInterface {
     try {
       _speechSynthesis = web.window.speechSynthesis;
       if (_speechSynthesis == null) {
-        print('[TTS_WEB] SpeechSynthesis não disponível');
+        debugPrint('❌ [TTS_WEB] SpeechSynthesis não disponível');
         return;
       }
 
       await _loadVoices();
       _isInitialized = true;
-      print('[TTS_WEB] Inicializado com sucesso');
+      debugPrint('🚀 [TTS_WEB] Inicializado com sucesso');
     } catch (e) {
-      print('[TTS_WEB] Erro na inicialização: $e');
+      debugPrint('❌ [TTS_WEB] Erro na inicialização: $e');
     }
   }
 
@@ -37,7 +38,7 @@ class TtsWeb implements TtsInterface {
     var voices = _speechSynthesis!.getVoices();
 
     if (voices.length == 0) {
-      print('[TTS_WEB] Aguardando vozes...');
+      debugPrint('🔄 [TTS_WEB] Aguardando vozes...');
       final synth = _speechSynthesis!;
       int attempts = 0;
       while (voices.length == 0 && attempts < 6) {
@@ -47,13 +48,13 @@ class TtsWeb implements TtsInterface {
       }
     }
 
-    print('[TTS_WEB] Vozes: ${voices.length}');
+    debugPrint('🔊 [TTS_WEB] Vozes: ${voices.length}');
   }
 
   @override
   void onUserInteraction() {
     _isUserInteracted = true;
-    print('[TTS_WEB] Interação registrada');
+    debugPrint('👤 [TTS_WEB] Interação registrada');
 
     if (_speechSynthesis != null && !_isProcessing) {
       _activateContext();
@@ -66,7 +67,7 @@ class TtsWeb implements TtsInterface {
 
     _isProcessing = true;
     try {
-      final utterance = web.SpeechSynthesisUtterance.new(' ');
+      final utterance = web.SpeechSynthesisUtterance(' ');
       utterance.lang = 'pt-BR';
       utterance.volume = 0.1;
       _speechSynthesis!.speak(utterance);
@@ -77,12 +78,12 @@ class TtsWeb implements TtsInterface {
           synth.cancel();
         }
         _isProcessing = false;
-        print('[TTS_WEB] Contexto ativado');
+        debugPrint('✅ [TTS_WEB] Contexto ativado');
         _startKeepAlive();
       });
     } catch (e) {
       _isProcessing = false;
-      print('[TTS_WEB] Erro na ativação: $e');
+      debugPrint('❌ [TTS_WEB] Erro na ativação: $e');
     }
   }
 
@@ -95,7 +96,7 @@ class TtsWeb implements TtsInterface {
           !_isSpeaking &&
           !synth.speaking) {
         try {
-          final utterance = web.SpeechSynthesisUtterance.new(' ');
+          final utterance = web.SpeechSynthesisUtterance(' ');
           utterance.lang = 'pt-BR';
           utterance.volume = 0;
           synth.speak(utterance);
@@ -131,23 +132,23 @@ class TtsWeb implements TtsInterface {
     if (cleanText.isEmpty) return;
 
     if (!_isUserInteracted) {
-      print('[TTS_WEB] Aguardando interação');
+      debugPrint('⚠️ [TTS_WEB] Aguardando interação');
       return;
     }
 
     if (_isSpeaking) {
-      print('[TTS_WEB] ⚠️ Já está falando, ignorando: "$cleanText"');
+      debugPrint('⚠️ [TTS_WEB] ⚠️ Já está falando, ignorando: "$cleanText"');
       return;
     }
 
     if (_speechSynthesis == null) return;
 
-    print('[TTS_WEB] 🔊 Falando: "$cleanText"');
+    debugPrint('🔊 [TTS_WEB] 🔊 Falando: "$cleanText"');
 
     final completer = Completer<void>();
 
     try {
-      final utterance = web.SpeechSynthesisUtterance.new(cleanText);
+      final utterance = web.SpeechSynthesisUtterance(cleanText);
 
       utterance.lang = 'pt-BR';
       utterance.rate = 0.9;
@@ -161,7 +162,7 @@ class TtsWeb implements TtsInterface {
 
       for (final voice in voicesList) {
         final name = voice.name.toLowerCase();
-        final lang = voice.lang?.toLowerCase() ?? '';
+        final lang = voice.lang.toLowerCase();
         if (lang.startsWith('pt') &&
             (name.contains('female') ||
                 name.contains('feminina') ||
@@ -176,7 +177,7 @@ class TtsWeb implements TtsInterface {
       if (selectedVoice == null) {
         try {
           selectedVoice = voicesList.firstWhere(
-                (v) => v.lang != null && v.lang!.startsWith('pt'),
+                (v) => v.lang.startsWith('pt'),
           );
         } catch (_) {
           selectedVoice = voicesList.isNotEmpty ? voicesList.first : null;
@@ -185,21 +186,21 @@ class TtsWeb implements TtsInterface {
 
       if (selectedVoice != null) {
         utterance.voice = selectedVoice;
-        print('[TTS_WEB] Voz selecionada: ${selectedVoice.name} (${selectedVoice.lang})');
+        debugPrint('🎤 [TTS_WEB] Voz selecionada: ${selectedVoice.name} (${selectedVoice.lang})');
       } else {
-        print('[TTS_WEB] ⚠️ Nenhuma voz disponível');
+        debugPrint('⚠️ [TTS_WEB] ⚠️ Nenhuma voz disponível');
       }
 
       // 🔥 CORREÇÃO: Usar addEventListener em vez de setters diretos
       // Os eventos são registrados via JS interop com addEventListener
       utterance.addEventListener('start', (JSAny? event) {
         _isSpeaking = true;
-        print('[TTS_WEB] 🔊 Iniciou fala');
+        debugPrint('🔊 [TTS_WEB] 🔊 Iniciou fala');
       }.toJS);
 
       utterance.addEventListener('end', (JSAny? event) {
         _isSpeaking = false;
-        print('[TTS_WEB] ✅ Fala finalizada');
+        debugPrint('✅ [TTS_WEB] ✅ Fala finalizada');
         if (!completer.isCompleted) {
           completer.complete();
         }
@@ -207,7 +208,7 @@ class TtsWeb implements TtsInterface {
 
       utterance.addEventListener('error', (JSAny? event) {
         _isSpeaking = false;
-        print('[TTS_WEB] ❌ Erro na fala');
+        debugPrint('❌ [TTS_WEB] ❌ Erro na fala');
         if (!completer.isCompleted) {
           completer.completeError('Erro na fala');
         }
@@ -218,7 +219,7 @@ class TtsWeb implements TtsInterface {
       await completer.future;
     } catch (e) {
       _isSpeaking = false;
-      print('[TTS_WEB] ❌ Exceção: $e');
+      debugPrint('❌ [TTS_WEB] ❌ Exceção: $e');
       rethrow;
     }
   }
@@ -231,7 +232,7 @@ class TtsWeb implements TtsInterface {
     }
     _isSpeaking = false;
     _isProcessing = false;
-    print('[TTS_WEB] 🛑 Parado');
+    debugPrint('🛑 [TTS_WEB] 🛑 Parado');
   }
 
   @override

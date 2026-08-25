@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/fcm_service.dart';
 import 'pedidos_state.dart';
@@ -18,6 +19,7 @@ class PedidosCubit extends Cubit<PedidosState> {
   PedidosLoaded? _currentLoadedState;
 
   PedidosCubit(this._repository) : super(PedidosInitial()) {
+    debugPrint('🚀 [PEDIDOS] Cubit inicializado');
     // 🔥 REGISTRA O CUBIT NO FCM PARA REFRESH AUTOMÁTICO
     FcmService().pedidoCubit = this;
     // Inicializa o TTS quando o cubit é criado
@@ -56,6 +58,7 @@ class PedidosCubit extends Cubit<PedidosState> {
       _currentLoadedState = novoEstado;
       emit(novoEstado);
     } catch (e) {
+      debugPrint('❌ [PEDIDOS] Erro ao carregar pedidos ativos: $e');
       if (!silencioso) {
         emit(PedidosError(e.toString()));
       } else if (_currentLoadedState != null) {
@@ -77,16 +80,14 @@ class PedidosCubit extends Cubit<PedidosState> {
 
       // 🔥 IDs DOS PEDIDOS QUE ESTÃO NOVOS
       final List<int> idsNovos = novosItens
-          .where((p) => p != null && p.id != null)
           .map((p) => p.id)
           .toList();
 
-      print('[PEDIDO_CUBIT] Pedidos novos encontrados: ${idsNovos.length}');
+      debugPrint('📋 [PEDIDOS] Pedidos novos encontrados: ${idsNovos.length}');
 
       // 🔥 CONSTRÓI A LISTA DE ALERTAS PARA OS NOVOS PEDIDOS
       final List<AlertItem> novosAlertas = [];
       for (final pedido in novosItens) {
-        if (pedido == null || pedido.id == null) continue;
         final alerta = PedidoUtils.formatarAlertaPedido(pedido);
         novosAlertas.add(AlertItem(pedidoId: pedido.id, text: alerta));
       }
@@ -99,13 +100,14 @@ class PedidosCubit extends Cubit<PedidosState> {
       _alertedPedidos.addAll(idsNovos);
 
     } catch (e, stackTrace) {
-      print('[PEDIDO_CUBIT] ❌ Erro ao processar pedidos novos: $e');
-      print('[PEDIDO_CUBIT] StackTrace: $stackTrace');
+      debugPrint('❌ [PEDIDOS] Erro ao processar pedidos novos: $e');
+      debugPrint('📚 [PEDIDOS] StackTrace: $stackTrace');
     }
   }
 
   // 🔥 REGISTRA INTERAÇÃO DO USUÁRIO (necessário para Web)
   void registerUserInteraction() {
+    debugPrint('👤 [PEDIDOS] Interação do usuário registrada para TTS');
     _ttsService.onUserInteraction();
   }
 
@@ -113,6 +115,7 @@ class PedidosCubit extends Cubit<PedidosState> {
   Future<void> loadPedidosAtivosWithStoreCheck(int storeId) async {
     // Se a loja mudou, recarrega
     if (_currentStoreId != storeId) {
+      debugPrint('🔄 [PEDIDOS] Loja alterada de $_currentStoreId para $storeId. Limpando alertas.');
       _currentStoreId = storeId;
       _alertedPedidos.clear();
       _ttsService.clearAlerts();
@@ -122,6 +125,7 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   // 🔥 FORÇAR RECARREGAMENTO (usado quando a loja muda)
   Future<void> reloadForStoreChange() async {
+    debugPrint('🔄 [PEDIDOS] Forçando recarregamento por mudança de loja');
     _currentStoreId = null; // Reseta para forçar recarregamento
     _alertedPedidos.clear();
     _ttsService.clearAlerts();
@@ -131,27 +135,28 @@ class PedidosCubit extends Cubit<PedidosState> {
   // 🔥 MÉTODO PARA PROCESSAR NOVO PEDIDO (usado via socket ou push)
   Future<void> onNovoPedido(PedidoModel pedido) async {
     try {
-      // 🔥 🔥 🔥 NUNCA USE addAlert DIRETAMENTE
-      // Apenas recarrega e deixa o _processNovosPedidos fazer o trabalho
+      debugPrint('🆕 [PEDIDOS] Novo pedido recebido via Socket/Push. Recarregando lista.');
       await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
     } catch (e) {
-      print('[PEDIDO_CUBIT] Erro ao processar novo pedido: $e');
+      debugPrint('❌ [PEDIDOS] Erro ao processar novo pedido: $e');
     }
   }
 
   // 🔥 Refresh silencioso (background)
   Future<void> refreshSilencioso() async {
+    debugPrint('🔄 [PEDIDOS] Refresh silencioso disparado');
     await carregarPedidosAtivos(silencioso: true);
   }
 
   // 🔥 Refresh completo (pull-to-refresh)
   Future<void> refresh() async {
+    debugPrint('🔄 [PEDIDOS] Refresh manual (pull-to-refresh) disparado');
     await carregarPedidosAtivos(silencioso: false);
   }
 
   // 🔥 ACEITAR PEDIDO
   Future<void> aceitarPedido(int id) async {
-    // 🔥 Atualiza estado com o ID do pedido em processamento
+    debugPrint('✅ [PEDIDOS] Aceitando pedido ID: $id');
     if (_currentLoadedState != null) {
       emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
     }
@@ -172,7 +177,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           grupos: response.grupos!,
           totalPedidos: total,
           isLoading: false,
-          updatingPedidoId: null, // 🔥 Limpa o estado de atualização
+          updatingPedidoId: null,
         );
         _currentLoadedState = novoEstado;
 
@@ -181,7 +186,7 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
-      // 🔥 Em caso de erro, limpa o estado de atualização
+      debugPrint('❌ [PEDIDOS] Erro ao aceitar pedido: $e');
       if (_currentLoadedState != null) {
         emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
       }
@@ -191,7 +196,7 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   // 🔥 RECUSAR PEDIDO
   Future<void> recusarPedido(int id, {String? motivo, String? motivoCodigo}) async {
-    // 🔥 Atualiza estado com o ID do pedido em processamento
+    debugPrint('❌ [PEDIDOS] Recusando pedido ID: $id. Motivo: $motivo');
     if (_currentLoadedState != null) {
       emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
     }
@@ -212,7 +217,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           grupos: response.grupos!,
           totalPedidos: total,
           isLoading: false,
-          updatingPedidoId: null, // 🔥 Limpa o estado de atualização
+          updatingPedidoId: null,
         );
         _currentLoadedState = novoEstado;
 
@@ -221,7 +226,7 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
-      // 🔥 Em caso de erro, limpa o estado de atualização
+      debugPrint('❌ [PEDIDOS] Erro ao recusar pedido: $e');
       if (_currentLoadedState != null) {
         emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
       }
@@ -231,7 +236,7 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   // 🔥 ATUALIZAR STATUS
   Future<void> atualizarStatus(int id, String status, {String? motivo}) async {
-    // 🔥 Atualiza estado com o ID do pedido em processamento
+    debugPrint('🔄 [PEDIDOS] Atualizando status pedido ID: $id para: $status');
     if (_currentLoadedState != null) {
       emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
     }
@@ -254,7 +259,7 @@ class PedidosCubit extends Cubit<PedidosState> {
           grupos: response.grupos!,
           totalPedidos: total,
           isLoading: false,
-          updatingPedidoId: null, // 🔥 Limpa o estado de atualização
+          updatingPedidoId: null,
         );
         _currentLoadedState = novoEstado;
         emit(novoEstado);
@@ -262,7 +267,7 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
-      // 🔥 Em caso de erro, limpa o estado de atualização
+      debugPrint('❌ [PEDIDOS] Erro ao atualizar status: $e');
       if (_currentLoadedState != null) {
         emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
       }
@@ -272,7 +277,7 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   // 🔥 CANCELAR PEDIDO
   Future<void> cancelarPedido(int id, String motivo) async {
-    // 🔥 Atualiza estado com o ID do pedido em processamento
+    debugPrint('🛑 [PEDIDOS] Cancelando pedido ID: $id. Motivo: $motivo');
     if (_currentLoadedState != null) {
       emit(_currentLoadedState!.copyWith(updatingPedidoId: id));
     }
@@ -301,6 +306,7 @@ class PedidosCubit extends Cubit<PedidosState> {
         await carregarPedidosAtivos(silencioso: true, forceRefresh: true);
       }
     } catch (e) {
+      debugPrint('❌ [PEDIDOS] Erro ao cancelar pedido: $e');
       if (_currentLoadedState != null) {
         emit(_currentLoadedState!.copyWith(updatingPedidoId: null));
       }
@@ -312,18 +318,13 @@ class PedidosCubit extends Cubit<PedidosState> {
   void _removeAlert(int pedidoId) {
     _ttsService.removeAlertByPedidoId(pedidoId);
     _alertedPedidos.remove(pedidoId);
-    print('[PEDIDO_CUBIT] Alerta removido para pedido $pedidoId');
+    debugPrint('🗑️ [PEDIDOS] Alerta removido para pedido $pedidoId');
   }
 
   // 🔥 ALTERNAR MUDO DO TTS
   Future<void> toggleTtsMute() async {
     final isMuted = await _ttsService.toggleMute();
-    print('[PEDIDO_CUBIT] TTS mudo: $isMuted');
-
-    // Se desmutou e tem alertas, o loop reinicia automaticamente
-    if (!isMuted && _alertedPedidos.isNotEmpty) {
-      // O loop iniciará automaticamente através do setMuted(false) no TtsService
-    }
+    debugPrint('🔇 [PEDIDOS] TTS mudo: $isMuted');
 
     if (_currentLoadedState != null) {
       emit(_currentLoadedState!.copyWith());
@@ -338,6 +339,7 @@ class PedidosCubit extends Cubit<PedidosState> {
 
   @override
   Future<void> close() {
+    debugPrint('🛑 [PEDIDOS] Fechando Cubit e limpando recursos');
     _ttsService.dispose();
     return super.close();
   }

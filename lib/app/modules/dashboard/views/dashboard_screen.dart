@@ -54,7 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.read<DashboardCubit>().loadDashboard(),
-                    child: const Text('Tentar novamente', style: const TextStyle(fontSize: 16)),
+                    child: const Text('Tentar novamente', style: TextStyle(fontSize: 16)),
                   ),
                 ],
               ),

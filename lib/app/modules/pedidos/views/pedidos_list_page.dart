@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/pedidos_cubit.dart';
 import '../cubit/pedidos_state.dart';
 import '../model/pedido_model.dart';
-import '../model/pedido_item_model.dart';
 import '../widgets/pedido_status_section.dart';
 import '../widgets/pedido_empty_widget.dart';
 import '../widgets/status_badge_widget.dart';
@@ -27,6 +26,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   @override
   void initState() {
     super.initState();
+    debugPrint('📋 [PEDIDOS] Inicializando listagem de pedidos');
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,6 +47,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      debugPrint('🔄 [PEDIDOS] App retomado - executando refresh silencioso');
       _refreshSilencioso();
     }
   }
@@ -61,12 +62,14 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   }
 
   void _carregarPedidos() {
+    debugPrint('🔄 [PEDIDOS] Solicitando carga de pedidos ativos');
     context.read<PedidosCubit>().carregarPedidosAtivos();
   }
 
   Future<void> _refreshSilencioso() async {
     if (_isRefreshing) return;
     _isRefreshing = true;
+    debugPrint('🔄 [PEDIDOS] Executando auto-update silencioso');
     await context.read<PedidosCubit>().refreshSilencioso();
     if (mounted) _isRefreshing = false;
   }
@@ -218,7 +221,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
           ),
         ],
       ),
-      // 🔥 REMOVIDO O FLOATINGACTIONBUTTON
       body: BlocConsumer<PedidosCubit, PedidosState>(
         listener: (context, state) {
           if (state is PedidoActionError) {
@@ -309,6 +311,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   }
 
   void _abrirDetalhes(BuildContext context, PedidoModel pedido) {
+    debugPrint('📦 [UI] Abrindo detalhes do pedido #${pedido.codigo ?? pedido.id}');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -391,7 +394,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    debugPrint('⬅️ [NAVIGATION] Fechando detalhes do pedido');
+                    Navigator.pop(context);
+                  },
                   child: const Text('Fechar'),
                 ),
               ),
@@ -484,7 +490,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        debugPrint('⬅️ [NAVIGATION] Cancelando recusa de pedido');
+                        Navigator.pop(context);
+                      },
                       child: const Text('Cancelar'),
                     ),
                   ),
@@ -492,6 +501,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                        debugPrint('❌ [PEDIDOS] Confirmando recusa de ID: $id');
                         Navigator.pop(context);
                         context.read<PedidosCubit>().recusarPedido(
                           id,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/store_cubit.dart';
 import '../bloc/store_state.dart';
-import '../../../routes/app_routes.dart';
+import '../../../navigation/navigation_cubit.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 
 class StoreSelectionPage extends StatefulWidget {
@@ -16,7 +16,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   @override
   void initState() {
     super.initState();
-    print('[UI] StoreSelectionPage aberta');
+    debugPrint('🏪 [UI] StoreSelectionPage aberta');
     // Carrega as lojas se ainda não estiverem carregadas
     final state = context.read<StoreCubit>().state;
     if (state is StoreInitial || state is StoreEmpty) {
@@ -26,6 +26,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final nav = context.read<NavigationCubit>();
     return ResponsiveScaffold(
       maxWidth: 800,
       appBar: AppBar(
@@ -40,12 +41,13 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () {
+            debugPrint('⬅️ [NAVIGATION] Cancelando seleção de loja');
             // Se veio de uma tela anterior, volta
             if (Navigator.canPop(context)) {
-              Navigator.pop(context);
+              nav.pop();
             } else {
               // Se não tem tela anterior, vai para o dashboard
-              Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+              nav.goToDashboard();
             }
           },
           tooltip: 'Cancelar',
@@ -54,6 +56,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
+              debugPrint('🔄 [UI] Solicitando recarregamento de lojas');
               context.read<StoreCubit>().loadStores();
             },
             tooltip: 'Recarregar',
@@ -62,7 +65,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
       ),
       body: BlocBuilder<StoreCubit, StoreState>(
         builder: (context, state) {
-          print('[UI] Estado da loja na seleção: $state');
+          debugPrint('🔄 [UI] Estado da loja na seleção: ${state.runtimeType}');
 
           if (state is StoreLoading) {
             return const Center(
@@ -150,9 +153,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                         ),
                         child: InkWell(
                           onTap: () {
-                            print('[UI] Loja selecionada: ${loja.nome} (ID: ${loja.id})');
+                            debugPrint('🏪 [UI] Loja selecionada: ${loja.nome} (ID: ${loja.id})');
                             context.read<StoreCubit>().selectStore(loja.id);
-                            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+                            nav.goToDashboard();
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
@@ -274,6 +277,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
+                      debugPrint('🔄 [UI] Tentando recarregar lojas após lista vazia');
                       context.read<StoreCubit>().loadStores();
                     },
                     icon: const Icon(Icons.refresh),
@@ -304,6 +308,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
+                      debugPrint('🔄 [UI] Tentando recarregar lojas após erro');
                       context.read<StoreCubit>().loadStores();
                     },
                     icon: const Icon(Icons.refresh),

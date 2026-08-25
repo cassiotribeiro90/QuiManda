@@ -1,11 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../navigation/navigation_cubit.dart';
 import '../bloc/onboarding_cubit.dart';
 import '../bloc/onboarding_state.dart';
 import '../models/onboarding_model.dart';
 import '../widgets/onboarding_button.dart';
 import '../widgets/onboarding_indicator.dart';
-import '../../../routes/app_routes.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../auth/cubit/auth_state.dart';
 
@@ -44,10 +45,14 @@ class _OnboardingViewState extends State<OnboardingView> {
       listener: (context, state) {
         if (state is OnboardingSeen) {
           final authState = context.read<AuthCubit>().state;
+          final nav = context.read<NavigationCubit>();
+          
           if (authState is AuthAuthenticated) {
-            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+            debugPrint('📱 [ONBOARDING] Onboarding visto. Usuário autenticado - Indo para Dashboard');
+            nav.goToDashboard();
           } else {
-            Navigator.pushReplacementNamed(context, AppRoutes.phoneInput);
+            debugPrint('📱 [ONBOARDING] Onboarding visto. Usuário não autenticado - Indo para Login');
+            nav.goToPhoneInput();
           }
         }
       },

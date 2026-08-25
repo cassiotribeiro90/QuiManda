@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
-import '../../../routes/app_routes.dart';
+import '../../../navigation/navigation_cubit.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../core/theme/app_text_styles.dart';
 
@@ -34,11 +34,8 @@ class _PhoneInputPageState extends State<PhoneInputPage> {
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthPhoneSent) {
-            Navigator.pushNamed(
-              context, 
-              AppRoutes.otpVerify, 
-              arguments: {'telefone': state.telefone},
-            );
+            debugPrint('🔐 [AUTH] SMS enviado para ${state.telefone}. Navegando para verificação.');
+            context.read<NavigationCubit>().goToOtpVerify(state.telefone);
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),

@@ -1,110 +1,328 @@
-# Resumo Técnico e Funcional do Projeto Lojista (MVP)
+# quiManda - Gestao de Pedidos e Cardapio
 
-Stack: Flutter 3.x (Dart) no frontend, backend a definir (sugestão: PHP/Yii2 ou Node.js), banco MariaDB/MySQL ou PostgreSQL. Gerenciamento de estado com flutter_bloc (Cubit) e injeção de dependências com GetIt. HTTP via Dio customizado no ApiClient. Navegação por rotas nomeadas (Navigator 1.0). Tema com cores de alto contraste e tipografia legível (tamanhos mínimos para uso em ambiente de loja).
+[![Flutter](https://img.shields.io/badge/Flutter-3.41.2-blue.svg)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.11.0-blue.svg)](https://dart.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-orange.svg)](https://firebase.google.com)
+---
 
-Estrutura de diretórios principal: lib/app/modules/ contém cada funcionalidade (pedidos, dashboard, chat, config, auth). Cada módulo segue o padrão: bloc/ (Cubit + State), models/ (modelos com Equatable e copyWith), repositories/ (abstração que chama services), services/ (chamadas HTTP com ApiClient), views/ (telas), widgets/ (componentes reutilizáveis). Exemplo: módulo pedidos tem PedidoCubit, PedidoState (PedidoInitial, PedidoLoading, PedidoLoaded, PedidoError, PedidoAceito, PedidoRecusado, PedidoTimerTick), PedidoModel, PedidoRepository, PedidoService, PedidosListView, PedidoCardWidget, PedidoBottomSheet.
+## Screenshots
 
-Cubits gerenciam estado local e chamam repository -> service -> API. Fluxo: View chama context.read<Cubit>().metodo(), Cubit emite Loading, processa, emite Loaded/Error, View reage com BlocBuilder/BlocConsumer.
+---
 
-Injeção de dependências centralizada em app/di/dependencies.dart com GetIt. ApiClient singleton, Cubits factories. Exemplo: getIt.registerLazySingleton(() => ApiClient()); getIt.registerFactory(() => PedidoCubit(getIt()));
+## Sobre o Projeto
 
-Backend: autenticação por device_id (header X-Device-Id). Endpoints principais (a definir): GET /orders (lista pedidos ativos e novos), POST /orders/{id}/accept, POST /orders/{id}/reject (com motivo opcional), GET /dashboard (métricas), GET /chat/{order_id}/messages, POST /chat/{order_id}/messages. O aceite automático e pausa programada serão implementados futuramente no backend.
+**quiManda** é um aplicativo de gestão de pedidos e cardápio para restaurantes e pizzarias. Desenvolvido com Flutter, oferece uma experiência completa para gerenciar pedidos, produtos e clientes em tempo real.
 
-Rotas do app: splash, home (pedidos), dashboard, config, chat, detalhes do pedido (bottom sheet). Definidas em app/routes/app_routes.dart.
-Usabilidades e Decisões de UX (MVP)
-Home (tela principal = Pedidos)
+### 🎯 Funcionalidades Principais
 
-    Fila vertical expansível: apenas pedidos, sem barra de status fixa.
+- 🔐 **Autenticação**: Login com telefone/OTP via Firebase
+- 📊 **Dashboard**: KPIs e métricas em tempo real
+- 📦 **Pedidos**: Gerenciamento completo de pedidos ativos
+- 📋 **Cardápio**: CRUD de produtos e categorias
+- ⚙️ **Configurações**: Personalização do app e loja
+- 🔔 **Notificações**: Push notifications com Firebase Messaging
+- 🗣️ **TTS**: Leitura de pedidos em voz alta (Web)
 
-    Card compacto com resumo: valor total, itens, timer.
+### 🛠️ Tecnologias
 
-    Toque no card expande um bottom sheet com detalhes completos.
+| Tecnologia | Versão | Uso |
+|------------|--------|-----|
+| Flutter | 3.41.2 | Framework principal |
+| Dart | 3.11.0 | Linguagem |
+| GoRouter | 13.2.5 | Navegação |
+| Firebase | Latest | Autenticação, FCM |
+| Flutter Bloc | 8.1.3 | Gerenciamento de estado |
+| Dio | Latest | Requisições HTTP |
+| Shelf | 1.4.0 | Servidor SPA |
 
-    Timer visível em anel progressivo ou barra no card.
+---
 
-    Aceitar: botão gigante verde, um toque, sem confirmação.
+## Arquitetura
 
-    Recusar: botão discreto, sem modal – confirmação inline (ex: manter pressionado ou botão que se transforma em "Confirmar recusa"). Motivo da recusa opcional (sugestões: item indisponível, área fora de entrega, volume alto, outro).
+### Estrutura de Pastas
 
-    Sem modal de confirmação – prioriza performance e velocidade.
+```
+lib/
+├── app/
+│   ├── navigation/
+│   │   ├── navigation_cubit.dart    # Controle de navegação
+│   │   ├── navigation_state.dart    # Estados de navegação
+│   │   └── app_router_listener.dart # Listener de navegação
+│   ├── routes/
+│   │   └── app_router.dart          # Configuração GoRouter
+│   ├── initialization/
+│   │   └── app_initializer.dart     # Inicialização do app
+│   └── widgets/
+│       └── splash_screen.dart       # Tela de splash
+├── modules/
+│   ├── auth/
+│   │   ├── cubit/
+│   │   │   ├── auth_cubit.dart      # Autenticação
+│   │   │   └── auth_state.dart      # Estados de auth
+│   │   └── views/
+│   │       ├── splash_page.dart
+│   │       ├── phone_input_page.dart
+│   │       └── otp_verify_page.dart
+│   ├── dashboard/
+│   │   ├── cubit/
+│   │   └── views/
+│   ├── pedidos/
+│   │   ├── cubit/
+│   │   └── views/
+│   ├── cardapio/
+│   │   ├── bloc/
+│   │   └── views/
+│   └── configuracoes/
+│       ├── bloc/
+│       └── views/
+├── shared/
+│   ├── api/
+│   │   ├── api_client.dart
+│   │   └── interceptors/
+│   │       └── refresh_interceptor.dart
+│   ├── services/
+│   │   ├── token_service.dart
+│   │   └── storage_service.dart
+│   └── theme/
+│       └── app_theme.dart
+└── main.dart # Ponto de entrada
+```
 
-Notificações e TTS
+### Fluxo de Navegacao
 
-    Ao receber novo pedido: som + vibração + TTS (Text-to-Speech).
+```
+Splash Screen
+│
+▼
+┌─────────────┐
+│ Autenticado? │
+└─────────────┘
+│             │
+│ Sim         │ Não
+▼             ▼
+Dashboard    Onboarding → Phone Input → OTP → Dashboard
+│
+▼
+┌─────────────────────────┐
+│     Bottom Navigation   │
+├─────────────────────────┤
+│ 🏠 Dashboard            │
+│ 📦 Pedidos              │
+│ 📋 Cardápio             │
+│ ⚙️ Configurações        │
+└─────────────────────────┘
+```
 
-    TTS reproduz: “Novo pedido de R$ 54,90, 3 itens, entrega em 2,3 km.”
+---
 
-    Enquanto houver pedidos pendentes, o TTS pode repetir o anúncio (configurável).
+## Configuracao e Instalacao
 
-    Configurações de som: TTS, toque sonoro ou sem som (útil para quem usa aceite automático).
+### Pre-requisitos
 
-Chat
+- Flutter SDK 3.41.2+
+- Dart SDK 3.11.0+
+- Firebase account (para autenticação e FCM)
+- Android Studio / VS Code
 
-    Chat direto com o cliente sem expor telefone.
+### Passos para rodar
 
-    Acessível a partir do card expandido (bottom sheet).
+```bash
+# 1. Clonar o repositório
+git clone https://github.com/seu-usuario/quimanda.git
+cd quimanda
 
-Dashboard (segunda aba)
+# 2. Instalar dependências
+flutter pub get
 
-    Separado da home, com métricas:
+# 3. Configurar Firebase
+# Adicionar os arquivos de configuração do Firebase:
+# - android/app/google-services.json
+# - ios/Runner/GoogleService-Info.plist
+# - lib/firebase_options.dart
 
-        Total de pedidos ativos
+# 4. Rodar em desenvolvimento
+flutter run -d chrome
+```
 
-        Faturamento do dia
+### Variáveis de Ambiente
 
-        Tempo médio de aceite
+Crie um arquivo `.env` na raiz do projeto:
 
-        Taxa de aceite
+```env
+# Firebase
+FIREBASE_API_KEY=xxx
+FIREBASE_PROJECT_ID=xxx
 
-        Cancelamentos
+# API
+API_URL=http://localhost:8001/api
+```
 
-Layout Responsivo
+---
 
-    Celular: lista vertical com cards + bottom sheet.
+## Desenvolvimento
 
-    Tablet: split screen (lista de pedidos à esquerda, detalhe à direita).
+### Comandos Uteis
 
-    Modo retrato e paisagem bem adaptados.
+```bash
+# Rodar em desenvolvimento
+flutter run
 
-    Alvos de toque mínimos de 48x48dp.
+# Rodar com logs detalhados
+flutter run --verbose
 
-    Contraste alto e fonte legível.
+# Rodar no Chrome
+flutter run -d chrome
 
-Funcionalidades Pós-MVP (implementação futura)
+# Limpar cache
+flutter clean
 
-    Aceite automático com regras (ex.: valor mínimo, distância máxima).
+# Rodar análise do código
+flutter analyze
 
-    Pausa programada com horários definidos pelo lojista.
+# Rodar testes
+flutter test
+```
 
-    Impressão automática do pedido na cozinha.
+### Padrao de Navegacao
 
-    Modo KDS (arrastar pedidos entre estágios: Novo → Em preparo → Pronto).
+```text
+context.read<NavigationCubit>().push('/pedidos/123');
+context.read<NavigationCubit>().go('/dashboard');
+context.read<NavigationCubit>().pop();
+```
 
-    Respostas rápidas para o cliente.
+### Padrao de Logs
 
-    Integração com smartwatch.
+```text
+debugPrint('[NAVIGATION] Navegando para: /pedidos');
+debugPrint('[AUTH] Login bem-sucedido');
+debugPrint('[API] Erro na requisicao: error');
+```
 
-    Gamificação leve (sequência de pedidos aceitos sem recusa).
+### Estrutura de Rotas
 
-Pontos de Atenção
+```text
+/splash          - Tela de inicializacao
+/onboarding      - Tela de boas-vindas
+/phone-input     - Entrada de telefone
+/otp-verify      - Verificacao OTP
+/dashboard       - Dashboard principal
+/pedidos         - Lista de pedidos
+/cardapio        - Gerenciamento de cardapio
+/configuracoes   - Configuracoes
+/formulario-produto - Formulario de produtos
+```
 
-    Não usar modal para recusa – confirmação inline.
+---
 
-    TTS configurável e respeitar preferência do usuário.
+## Build e Deploy
 
-    Dashboard separado – home apenas pedidos.
+### Build de Producao
 
-    Fila vertical – não usar fila horizontal.
+```bash
+# Build para Web
+flutter build web --release --source-maps
 
-    Aceitar sem confirmação; recusar com confirmação inline.
+# Build para Android
+flutter build apk --release
 
-    Layout responsivo obrigatório (celular e tablet).
+# Build para iOS
+flutter build ios --release
+```
 
-    Alvos de toque ≥ 48x48dp.
+### Servidor SPA (Produção)
 
-    Timer com anel progressivo no card.
+```bash
+# Entrar na pasta do build
+cd build/web
 
-    Chat não expõe telefone do cliente.
+# Adicionar dependências do servidor
+dart pub add shelf shelf_router --dev
 
-    Arquitetura já deve prever aceite automático e pausa programada para evitar retrabalho futuro.
+# Criar server.dart (o arquivo está incluso no projeto)
+dart run server.dart
+```
 
+### Configuração para Diferentes Ambientes
+
+| Ambiente | Comando | URL |
+|------------|-----------|-------|
+| Desenvolvimento | `flutter run` | `http://localhost:xxxxx` |
+| Produção (Dev) | `flutter build web + dhttpd` | `http://localhost:8000` |
+| Produção (SPA) | `flutter build web + server.dart` | `http://localhost:8000` |
+
+---
+
+## Contribuicao
+
+### Como contribuir
+
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+### Padrões de Código
+
+- Use `debugPrint()` em vez de `print()`
+- Adicione emojis nos logs para facilitar leitura
+- Siga o padrão de navegação com `NavigationCubit`
+- Mantenha a estrutura de pastas organizada por módulos
+
+---
+
+## Changelog
+
+### [2026-08-24] - Migracao para GoRouter & Firebase
+
+#### Novas Funcionalidades
+
+- **Firebase Integration**
+  - Firebase Core para autenticação e serviços
+  - Firebase Messaging para notificações push
+  - Configuração multi-plataforma
+- **GoRouter Navigation**
+  - Deep linking funcional com URLs limpas
+  - ShellRoute com BottomNavigationBar
+  - Redirecionamento inteligente baseado em autenticação
+  - Refresh token automático com interceptor
+- **Web Improvements**
+  - URLs sem # com `usePathUrlStrategy()`
+  - Servidor SPA configurado para produção
+  - Build otimizado com source maps
+
+#### 🐛 Correções de Bugs
+
+- Corrigido tela branca durante solicitação de permissões
+- Corrigido redirecionamento forçado para Dashboard
+- Corrigido Page Not Found ao abrir nova aba
+- Adicionado SplashScreen com loading state
+
+### [2026-08-20] - Versão Inicial
+
+- Estrutura base do projeto
+- Autenticação com telefone/OTP
+- Módulo de pedidos
+- Módulo de cardápio
+- Integação com API REST
+
+---
+
+## 📞 Contato
+
+**Equipe quiManda**
+- **Email:** contato@quimanda.com.br
+- **Website:** https://quimanda.com.br
+- **GitHub:** https://github.com/seu-usuario/quimanda
+
+---
+
+## 🙏 Agradecimentos
+
+- Flutter - Framework incrível
+- Firebase - Backend services
+- GoRouter - Navegação robusta
+- Bloc - Gerenciamento de estado
+
+<div> <sub>Feito com ❤️ pela equipe quiManda</sub> </div>

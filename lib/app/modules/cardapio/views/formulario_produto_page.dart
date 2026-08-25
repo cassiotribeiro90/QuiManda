@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
@@ -9,6 +10,7 @@ import '../models/categoria.dart';
 import '../models/subcategoria.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../auth/cubit/auth_state.dart';
+import '../../../navigation/navigation_cubit.dart';
 
 class FormularioProdutoPage extends StatefulWidget {
   final ProdutoModel? produto;
@@ -59,6 +61,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
   void initState() {
     super.initState();
     _isEditing = widget.produto != null;
+    debugPrint('📦 [CARDAPIO] Abrindo formulário de produto. Edição: $_isEditing');
     _inicializarControllers();
     
     // Load initial data
@@ -151,19 +154,19 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
     return BlocConsumer<CardapioCubit, CardapioState>(
       listener: (context, state) {
         if (state is CardapioOperationSuccess) {
-          Navigator.pop(context, true);
+          debugPrint('✅ [CARDAPIO] Operação realizada com sucesso: ${state.message}');
+          context.read<NavigationCubit>().pop();
+          // Recarrega a lista após voltar
+          context.read<CardapioCubit>().carregarProdutos();
         } else if (state is CardapioError) {
+          debugPrint('❌ [CARDAPIO] Erro na operação: ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         } else if (state is CardapioFormLoaded) {
-          debugPrint('📦 Produto recebido: ${state.produto?.toJson()}');
-          debugPrint('🏷️ Categoria ID: ${state.produto?.categoriaId}');
-          debugPrint('📂 Subcategoria ID: ${state.produto?.subcategoriaId}');
-
+          debugPrint('📦 [CARDAPIO] Dados do formulário carregados');
           setState(() {
             _categorias = state.categorias;
-            // Se as subcategorias vierem no estado (ex: após loadSubcategorias), atualiza a lista local
             if (state.subcategorias.isNotEmpty) {
               _subcategorias = state.subcategorias;
             }
@@ -177,7 +180,6 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
               _initialDataLoaded = true;
             });
 
-            // Após carregar os dados iniciais, se houver categoria, busca subcategorias
             if (_categoriaId != null) {
               _carregarSubcategorias(_categoriaId!, resetSelection: false);
             }
@@ -192,7 +194,10 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
           appBar: AppBar(
             title: Text(_isEditing ? 'Editar Produto' : 'Novo Produto'),
             leading: BackButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                debugPrint('⬅️ [NAVIGATION] Voltando do formulário de produto');
+                context.read<NavigationCubit>().pop();
+              },
             ),
           ),
           body: (state is CardapioLoading && !_initialDataLoaded)
@@ -329,7 +334,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
           const SizedBox(height: 20),
           
           DropdownButtonFormField<int?>(
-            value: effectiveCategoriaId,
+            initialValue: effectiveCategoriaId,
             decoration: const InputDecoration(labelText: 'Categoria *', prefixIcon: Icon(Icons.category_outlined), border: OutlineInputBorder()),
             items: [
               const DropdownMenuItem(value: null, child: Text('Selecione uma categoria')),
@@ -360,7 +365,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
             ))
           else
             DropdownButtonFormField<int?>(
-              value: effectiveSubcategoriaId,
+              initialValue: effectiveSubcategoriaId,
               decoration: const InputDecoration(labelText: 'Subcategoria', prefixIcon: Icon(Icons.account_tree_outlined), border: OutlineInputBorder()),
               items: [
                 const DropdownMenuItem(value: null, child: Text('Sem subcategoria')),
@@ -398,7 +403,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
                   height: 150,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     height: 150,
                     color: Colors.grey[200],
                     child: const Center(child: Text('Imagem inválida')),
@@ -422,7 +427,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
             title: const Text('Disponível para venda'),
             value: _disponivel,
             onChanged: (value) => setState(() => _disponivel = value),
-            activeColor: Colors.green,
+            activeThumbColor: Colors.green,
           ),
           SwitchListTile(
             title: const Text('Produto Ativo'),
@@ -433,7 +438,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
             title: const Text('Produto em Destaque'),
             value: _destaque,
             onChanged: (value) => setState(() => _destaque = value),
-            activeColor: Colors.amber,
+            activeThumbColor: Colors.amber,
           ),
         ],
       ),
@@ -551,14 +556,19 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
   }
 
   void _salvar() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      debugPrint('⚠️ [UI] Formulário inválido. Verifique os campos obrigatórios.');
+      return;
+    }
 
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthAuthenticated) {
+      debugPrint('❌ [AUTH] Sessão expirada ao tentar salvar produto.');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sessão expirada.')));
       return;
     }
 
+    debugPrint('💾 [CARDAPIO] Iniciando salvamento do produto...');
     final preco = double.tryParse(_precoController.text.replaceAll(',', '.')) ?? 0;
     final precoPromo = _precoPromocionalController.text.isNotEmpty 
         ? double.tryParse(_precoPromocionalController.text.replaceAll(',', '.')) 

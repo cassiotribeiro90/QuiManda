@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../routes/app_routes.dart';
+import 'package:go_router/go_router.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../../../store/bloc/store_cubit.dart';
 import '../../../store/bloc/store_state.dart';
-import '../../cubit/home_cubit.dart';
-
+import '../../../../navigation/navigation_cubit.dart';
 
 class SideMenu extends StatelessWidget {
   final bool isDrawer;
@@ -15,6 +14,7 @@ class SideMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final nav = context.read<NavigationCubit>();
     
     return Container(
       width: 260,
@@ -74,12 +74,14 @@ class SideMenu extends StatelessWidget {
           
           // Menu Items
           Expanded(
-            child: BlocBuilder<HomeCubit, HomeState>(
-              builder: (context, state) {
+            child: Builder( // Removido BlocBuilder de HomeCubit
+              builder: (context) {
+                // Determina o índice atual baseado na URL (GoRouter)
+                final String location = GoRouterState.of(context).uri.toString();
                 int currentIndex = 0;
-                if (state is HomeModuleChanged) {
-                  currentIndex = state.index;
-                }
+                if (location.contains('pedidos')) currentIndex = 1;
+                else if (location.contains('cardapio')) currentIndex = 2;
+                else if (location.contains('configuracoes')) currentIndex = 3;
 
                 return ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -88,28 +90,28 @@ class SideMenu extends StatelessWidget {
                       context,
                       icon: Icons.dashboard,
                       label: 'Dashboard',
-                      index: 0,
+                      route: '/dashboard',
                       isSelected: currentIndex == 0,
                     ),
                     _buildMenuItem(
                       context,
                       icon: Icons.receipt_long,
                       label: 'Pedidos',
-                      index: 1,
+                      route: '/pedidos',
                       isSelected: currentIndex == 1,
                     ),
                     _buildMenuItem(
                       context,
                       icon: Icons.restaurant_menu,
                       label: 'Cardápio',
-                      index: 2,
+                      route: '/cardapio',
                       isSelected: currentIndex == 2,
                     ),
                     _buildMenuItem(
                       context,
                       icon: Icons.settings,
                       label: 'Configurações',
-                      index: 3,
+                      route: '/configuracoes',
                       isSelected: currentIndex == 3,
                     ),
                     
@@ -129,11 +131,11 @@ class SideMenu extends StatelessWidget {
                               style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                             onTap: () {
-                              print('[UI_NAV] Abrindo seleção de lojas pelo menu');
+                              debugPrint('🏪 [UI_NAV] Abrindo seleção de lojas pelo menu');
                               if (isDrawer) {
-                                Navigator.pop(context);
+                                nav.pop();
                               }
-                              Navigator.pushNamed(context, AppRoutes.storeSelection);
+                              nav.goToStoreSelection();
                             },
                           );
                         }
@@ -148,6 +150,7 @@ class SideMenu extends StatelessWidget {
                         style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w500),
                       ),
                       onTap: () {
+                        debugPrint('🔐 [AUTH] Logout solicitado via menu');
                         context.read<AuthCubit>().logout();
                       },
                     ),
@@ -165,10 +168,11 @@ class SideMenu extends StatelessWidget {
     BuildContext context, {
     required IconData icon,
     required String label,
-    required int index,
+    required String route,
     required bool isSelected,
   }) {
     final theme = Theme.of(context);
+    final nav = context.read<NavigationCubit>();
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -188,7 +192,9 @@ class SideMenu extends StatelessWidget {
         selectedTileColor: theme.primaryColor.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         onTap: () {
-          context.read<HomeCubit>().changeModule(index, label);
+          debugPrint('🔄 [UI_NAV] Navegando para rota: $route');
+          nav.go(route);
+          
           if (isDrawer) {
             Navigator.pop(context);
           }

@@ -31,27 +31,37 @@ class AuthCubit extends Cubit<AuthState> {
        _storageService = storageService,
        _fcmService = fcmService,
        _deviceService = deviceService,
-       super(AuthInitial());
+       super(AuthInitial()) {
+    debugPrint('🔐 [AUTH] Cubit inicializado');
+  }
 
   Future<void> checkAuthStatus() async {
+    debugPrint('🚀 [AUTH] Checando status de autenticação...');
+    // ⚠️ Aguarda um pequeno delay para garantir que a UI e o Router estão prontos
+    await Future.delayed(const Duration(milliseconds: 200));
+
     final token = await _storageService.getToken();
     if (token != null && token.isNotEmpty) {
+      debugPrint('🔐 [AUTH] Token encontrado localmente');
       final lojistaData = _tokenService.getLojistaData();
       if (lojistaData != null) {
         final lojista = LojistaModel.fromJson(lojistaData);
+        debugPrint('✅ [AUTH] Lojista recuperado do storage: ${lojista.nome}');
         // Carrega as lojas antes de emitir autenticado
         await getIt<StoreCubit>().loadStores();
         emit(AuthAuthenticated(lojista, token));
       } else {
-        // Token existe mas dados da loja não. Busca do servidor.
+        debugPrint('⚠️ [AUTH] Token existe mas dados do lojista não. Validando no servidor...');
         await checkAuth();
       }
     } else {
+      debugPrint('❌ [AUTH] Nenhum token encontrado');
       emit(AuthUnauthenticated());
     }
   }
 
   Future<void> checkAuth() async {
+    debugPrint('🚀 [AUTH] Validando token com o servidor...');
     final token = await _storageService.getToken();
     
     if (token != null && token.isNotEmpty) {
@@ -60,9 +70,9 @@ class AuthCubit extends Cubit<AuthState> {
         if (response['success'] == true) {
           final data = response['data'];
           final lojista = LojistaModel.fromJson(data['lojista']);
-          // Salva localmente para a próxima vez
-          await _tokenService.saveLojista(data['lojista']);
+          debugPrint('✅ [AUTH] Token válido. Lojista: ${lojista.nome}');
           
+          await _tokenService.saveLojista(data['lojista']);
           final authData = AuthResponse.fromJson(response);
           await getIt<StoreCubit>().updateStores(authData.lojas);
           
@@ -70,7 +80,7 @@ class AuthCubit extends Cubit<AuthState> {
           return;
         }
       } catch (e) {
-        debugPrint('❌ Erro ao validar token: $e');
+        debugPrint('❌ [AUTH] Erro ao validar token: $e');
         if (e.toString().contains('401')) {
            await logout();
         }
@@ -80,40 +90,42 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> sendOtp(String telefone) async {
+    debugPrint('🔐 [AUTH] Solicitando OTP para: $telefone');
     emit(AuthLoading());
     try {
       final telLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
       final response = await _authService.sendOtp(telLimpo);
       if (response['success'] == true) {
         final telefoneRetornado = response['data']?['telefone'] ?? telefone;
+        debugPrint('✅ [AUTH] OTP enviado com sucesso para: $telefoneRetornado');
         emit(AuthPhoneSent(telefoneRetornado, 300));
       } else {
+        debugPrint('❌ [AUTH] Erro ao enviar OTP: ${response['message']}');
         emit(AuthError(response['message'] ?? 'Erro ao enviar código'));
       }
     } catch (e) {
+      debugPrint('❌ [AUTH] Exceção ao enviar OTP: $e');
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> verifyOtp(String telefone, String codigo) async {
+    debugPrint('🔐 [AUTH] Verificando OTP para: $telefone');
     emit(AuthOtpVerifying());
     try {
-      print('[AUTH_CUBIT] Verificando OTP para $telefone');
       final telLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
       
-      // 🔥 OBTÉM O FCM TOKEN (PROTEGIDO PARA WINDOWS)
       String? fcmToken;
       if (kIsWeb || !Platform.isWindows) {
         fcmToken = _fcmService.token;
       }
       
-      // 🔥 OBTÉM O DEVICE ID
       final deviceId = await _deviceService.getDeviceId();
 
       final response = await _authService.verifyOtp(telLimpo, codigo, deviceId: deviceId, deviceToken: fcmToken);
       
       if (response['success'] == true) {
-        print('[AUTH_CUBIT] OTP verificado com sucesso');
+        debugPrint('✅ [AUTH] OTP verificado com sucesso');
         final authData = AuthResponse.fromJson(response);
         final token = authData.accessToken!;
         final refreshToken = authData.refreshToken!;
@@ -125,42 +137,34 @@ class AuthCubit extends Cubit<AuthState> {
         await _tokenService.saveTokens(token, refreshToken);
         await _tokenService.saveLojista(response['data']['lojista']);
 
-        // 🔥 ENVIA DEVICE TOKEN (garantia se não foi no request inicial)
         await _fcmService.sendTokenToBackend();
-
-        print('[AUTH_CUBIT] Dados de autenticação salvos. Lojas recebidas: ${authData.lojas.length}');
-
-        // 🔥 ATUALIZA AS LOJAS NO CUBIT
         await getIt<StoreCubit>().updateStores(authData.lojas);
 
         emit(AuthAuthenticated(lojista, token));
       } else {
-        print('[AUTH_CUBIT] Erro na verificação do OTP: ${response['message']}');
+        debugPrint('❌ [AUTH] Código OTP inválido: ${response['message']}');
         emit(AuthError(response['message'] ?? 'Código inválido'));
       }
     } catch (e) {
-      print('[AUTH_CUBIT] Exceção no verifyOtp: $e');
+      debugPrint('❌ [AUTH] Exceção ao verificar OTP: $e');
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> login(String email, String senha) async {
+    debugPrint('🔐 [AUTH] Tentando login (E-mail): $email');
     emit(AuthLoading());
     try {
-      print('[AUTH_CUBIT] Tentando login para $email');
-      
-      // 🔥 OBTÉM O FCM TOKEN (PROTEGIDO PARA WINDOWS)
       String? fcmToken;
       if (kIsWeb || !Platform.isWindows) {
         fcmToken = _fcmService.token;
       }
 
-      // 🔥 OBTÉM O DEVICE ID
       final deviceId = await _deviceService.getDeviceId();
 
       final response = await _authService.login(email, senha, deviceId: deviceId, deviceToken: fcmToken);
       if (response['success'] == true) {
-        print('[AUTH_CUBIT] Login bem-sucedido');
+        debugPrint('✅ [AUTH] Login realizado com sucesso');
         final authData = AuthResponse.fromJson(response);
         final token = authData.accessToken!;
         final refreshToken = authData.refreshToken;
@@ -174,37 +178,32 @@ class AuthCubit extends Cubit<AuthState> {
         await _tokenService.saveTokens(token, refreshToken ?? '');
         await _tokenService.saveLojista(response['data']['lojista']);
 
-        // 🔥 ENVIA DEVICE TOKEN (garantia)
         await _fcmService.sendTokenToBackend();
-
-        print('[AUTH_CUBIT] Dados de login salvos. Lojas recebidas: ${authData.lojas.length}');
-
-        // 🔥 ATUALIZA AS LOJAS NO CUBIT
         await getIt<StoreCubit>().updateStores(authData.lojas);
 
         emit(AuthAuthenticated(lojista, token));
       } else {
-        print('[AUTH_CUBIT] Falha no login: ${response['message']}');
+        debugPrint('❌ [AUTH] Falha no login: ${response['message']}');
         emit(AuthError(response['message'] ?? 'Email ou senha inválidos'));
       }
     } catch (e) {
-      print('[AUTH_CUBIT] Exceção no login: $e');
+      debugPrint('❌ [AUTH] Exceção no login: $e');
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> logout() async {
+    debugPrint('🔐 [AUTH] Realizando logout...');
     try {
-      // 🔥 REMOVE O DEVICE TOKEN DO BACKEND
       await _fcmService.removeTokenFromBackend();
       await _authService.logout();
     } catch (_) {}
     
-    // 🔥 LIMPA O DEVICE_ID LOCAL
     await _deviceService.clearDeviceId();
     await _storageService.clearAll();
     await _tokenService.clear();
     await getIt<StoreCubit>().clear();
+    debugPrint('✅ [AUTH] Logout concluído');
     emit(AuthUnauthenticated());
   }
 }

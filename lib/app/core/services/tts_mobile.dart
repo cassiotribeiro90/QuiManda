@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'tts_interface.dart';
 
@@ -22,28 +23,28 @@ class TtsMobile implements TtsInterface {
 
       _flutterTts.setStartHandler(() {
         _isSpeaking = true;
-        print('[TTS_MOBILE] 🎤 Iniciou fala');
+        debugPrint('🔊 [TTS_MOBILE] 🎤 Iniciou fala');
       });
 
       _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;
-        print('[TTS_MOBILE] ✅ Fala finalizada');
+        debugPrint('✅ [TTS_MOBILE] ✅ Fala finalizada');
       });
 
       _flutterTts.setErrorHandler((msg) {
         _isSpeaking = false;
-        print('[TTS_MOBILE] ❌ Erro: $msg');
+        debugPrint('❌ [TTS_MOBILE] ❌ Erro: $msg');
       });
 
       _flutterTts.setCancelHandler(() {
         _isSpeaking = false;
-        print('[TTS_MOBILE] 🛑 Fala cancelada');
+        debugPrint('🛑 [TTS_MOBILE] 🛑 Fala cancelada');
       });
 
       _isInitialized = true;
-      print('[TTS_MOBILE] ✅ Inicializado com sucesso');
+      debugPrint('🚀 [TTS_MOBILE] ✅ Inicializado com sucesso');
     } catch (e) {
-      print('[TTS_MOBILE] ❌ Erro na inicialização: $e');
+      debugPrint('❌ [TTS_MOBILE] ❌ Erro na inicialização: $e');
     }
   }
 
@@ -68,11 +69,11 @@ class TtsMobile implements TtsInterface {
     if (cleanText.isEmpty) return;
 
     if (_isSpeaking) {
-      print('[TTS_MOBILE] ⚠️ Já está falando, ignorando: "$cleanText"');
+      debugPrint('⚠️ [TTS_MOBILE] ⚠️ Já está falando, ignorando: "$cleanText"');
       return;
     }
 
-    print('[TTS_MOBILE] 🔊 Falando: "$cleanText"');
+    debugPrint('🔊 [TTS_MOBILE] 🔊 Falando: "$cleanText"');
 
     try {
       // 🔥 CRIA UM COMPLETER PARA AGUARDAR O FIM DA FALA
@@ -84,7 +85,7 @@ class TtsMobile implements TtsInterface {
 
       _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;
-        print('[TTS_MOBILE] ✅ Fala finalizada');
+        debugPrint('✅ [TTS_MOBILE] ✅ Fala finalizada');
         if (!completer.isCompleted) {
           completer.complete();
         }
@@ -96,7 +97,7 @@ class TtsMobile implements TtsInterface {
 
       _flutterTts.setErrorHandler((msg) {
         _isSpeaking = false;
-        print('[TTS_MOBILE] ❌ Erro: $msg');
+        debugPrint('❌ [TTS_MOBILE] ❌ Erro: $msg');
         if (!completer.isCompleted) {
           completer.completeError(msg);
         }
@@ -108,7 +109,7 @@ class TtsMobile implements TtsInterface {
       final result = await _flutterTts.speak(cleanText);
       if (result != 1) {
         _isSpeaking = false;
-        print('[TTS_MOBILE] ❌ Erro ao falar: $result');
+        debugPrint('❌ [TTS_MOBILE] ❌ Erro ao falar: $result');
         if (!completer.isCompleted) {
           completer.completeError('Erro ao falar: $result');
         }
@@ -135,7 +136,7 @@ class TtsMobile implements TtsInterface {
 
     } catch (e) {
       _isSpeaking = false;
-      print('[TTS_MOBILE] ❌ Exceção: $e');
+      debugPrint('❌ [TTS_MOBILE] ❌ Exceção: $e');
       rethrow;
     }
   }
@@ -144,7 +145,7 @@ class TtsMobile implements TtsInterface {
   Future<void> stopAndClear() async {
     await _flutterTts.stop();
     _isSpeaking = false;
-    print('[TTS_MOBILE] 🛑 Parado');
+    debugPrint('🛑 [TTS_MOBILE] 🛑 Parado');
   }
 
   @override

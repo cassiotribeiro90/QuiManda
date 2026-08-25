@@ -79,7 +79,7 @@ class ProdutoCard extends StatelessWidget {
                 Switch(
                   value: produto.disponivel,
                   onChanged: onToggle,
-                  activeColor: Colors.green,
+                  activeThumbColor: Colors.green,
                 ),
               ],
             ),

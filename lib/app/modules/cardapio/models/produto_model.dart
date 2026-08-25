@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 // Função para converter string para double com segurança
 double? _parseDouble(dynamic value) {
@@ -175,8 +176,8 @@ class ProdutoModel extends Equatable {
         deletadoEm: json['deletado_em'] as String?,
       );
     } catch (e) {
-      print('❌ Erro no fromJson: $e');
-      print('📄 JSON problemático: $json');
+      debugPrint('❌ [MODEL] Erro no fromJson de ProdutoModel: $e');
+      debugPrint('📄 [MODEL] JSON problemático: $json');
       rethrow;
     }
   }
