@@ -64,13 +64,13 @@ class NavigationCubit extends Cubit<NavigationState> {
     return protected.any((route) => location.startsWith(route));
   }
 
-  /// Navega para Dashboard apenas se necessário (não estiver em rota protegida)
-  void goToDashboardIfNeeded(String currentLocation) {
+  /// Navega para Pedidos apenas se necessário (não estiver em rota protegida)
+  void goToPedidosIfNeeded(String currentLocation) {
     if (isProtectedRoute(currentLocation)) {
       debugPrint('✅ [NAVIGATION] Mantendo rota protegida atual: $currentLocation');
       return;
     }
-    debugPrint('🚀 [NAVIGATION] Redirecionando para Dashboard');
-    goToDashboard();
+    debugPrint('🚀 [NAVIGATION] Redirecionando para Pedidos');
+    goToPedidos();
   }
 }

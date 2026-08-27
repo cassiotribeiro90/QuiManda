@@ -61,7 +61,7 @@ class AppRouterListener extends StatelessWidget {
                 }
               }
 
-              nav.goToDashboardIfNeeded(currentLocation ?? '/');
+              nav.goToPedidosIfNeeded(currentLocation ?? '/pedidos');
             } else if (state is AuthUnauthenticated) {
               debugPrint('❌ [LISTENER] Usuário não autenticado');
               

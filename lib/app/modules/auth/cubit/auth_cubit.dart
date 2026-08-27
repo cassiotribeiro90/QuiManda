@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_state.dart';
@@ -12,6 +13,9 @@ import '../../store/bloc/store_cubit.dart';
 import '../model/auth_response_model.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/services/device_service.dart';
+import '../../../core/storage/store_storage.dart';
+import '../../../core/api_client.dart';
+import 'package:go_router/go_router.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
@@ -19,6 +23,7 @@ class AuthCubit extends Cubit<AuthState> {
   final StorageService _storageService;
   final FcmService _fcmService;
   final DeviceService _deviceService;
+  final StoreStorage _storeStorage;
   
   AuthCubit({
     required AuthService authService,
@@ -26,11 +31,13 @@ class AuthCubit extends Cubit<AuthState> {
     required StorageService storageService,
     required FcmService fcmService,
     required DeviceService deviceService,
+    required StoreStorage storeStorage,
   }) : _authService = authService,
        _tokenService = tokenService,
        _storageService = storageService,
        _fcmService = fcmService,
        _deviceService = deviceService,
+       _storeStorage = storeStorage,
        super(AuthInitial()) {
     debugPrint('🔐 [AUTH] Cubit inicializado');
   }
@@ -202,10 +209,22 @@ class AuthCubit extends Cubit<AuthState> {
     await _deviceService.clearDeviceId();
     await _tokenService.clear();
     await _storageService.clearAll();
+    await _storeStorage.clear();
     await getIt<StoreCubit>().clear();
     
     debugPrint('✅ [AUTH] Logout realizado com sucesso');
     emit(AuthUnauthenticated());
+    _navigateToLogin();
+  }
+
+  void _navigateToLogin() {
+    final context = ApiClient.navigatorKey.currentContext;
+    if (context != null) {
+      debugPrint('🔐 [AUTH] Redirecionando para login');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/phone-input');
+      });
+    }
   }
 
   // Métodos legados ou auxiliares mantidos para compatibilidade

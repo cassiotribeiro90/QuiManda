@@ -1,59 +1,65 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../modules/auth/model/loja_model.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
 
 class StoreStorage {
+  static const String _selectedStoreIdKey = 'selected_store_id';
+  static const String _storesKey = 'stores';
   final SharedPreferences _prefs;
-  static const String _keyStoreId = 'selected_store_id';
-  static const String _keyStores = 'cached_stores';
 
+  // 🔥 Construtor que recebe SharedPreferences
   StoreStorage(this._prefs);
 
+  // 🔥 Metodo estático para criar instância (async)
+  static Future<StoreStorage> create() async {
+    final prefs = await SharedPreferences.getInstance();
+    return StoreStorage(prefs);
+  }
+
+  // ==================== MÉTODOS PARA STORE ====================
+
+  /// Salva a lista de lojas
+  Future<void> saveStores(List<Map<String, dynamic>> stores) async {
+    final jsonString = jsonEncode(stores);
+    await _prefs.setString(_storesKey, jsonString);
+    debugPrint('🏪 [STORE_STORAGE] Lojas salvas: ${stores.length}');
+  }
+
+  /// Recupera a lista de lojas
+  List<Map<String, dynamic>>? getStores() {
+    final jsonString = _prefs.getString(_storesKey);
+    if (jsonString == null) return null;
+    try {
+      final List<dynamic> decoded = jsonDecode(jsonString);
+      return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+    } catch (e) {
+      debugPrint('⚠️ [STORE_STORAGE] Erro ao decodificar lojas: $e');
+      return null;
+    }
+  }
+
+  /// Salva o ID da loja selecionada
   Future<void> saveSelectedStoreId(int storeId) async {
-    await _prefs.setInt(_keyStoreId, storeId);
-    if (kDebugMode) {
-      debugPrint('🏪 [STORE_STORAGE] Loja selecionada salva: $storeId');
-    }
+    await _prefs.setInt(_selectedStoreIdKey, storeId);
+    debugPrint('🏪 [STORE_STORAGE] Loja selecionada salva: $storeId');
   }
 
+  /// Recupera o ID da loja selecionada
   int? getSelectedStoreId() {
-    final id = _prefs.getInt(_keyStoreId);
-    if (kDebugMode) {
-      debugPrint('🏪 [STORE_STORAGE] Loja selecionada recuperada: $id');
-    }
-    return id;
+    return _prefs.getInt(_selectedStoreIdKey);
   }
 
-  Future<void> saveStores(List<LojaModel> stores) async {
-    final jsonList = stores.map((e) => e.toJson()).toList();
-    await _prefs.setString(_keyStores, json.encode(jsonList));
-    if (kDebugMode) {
-      debugPrint('📦 [STORE_STORAGE] Salvando ${stores.length} lojas no cache');
-    }
-  }
-
-  List<LojaModel> getStores() {
-    final jsonString = _prefs.getString(_keyStores);
-    if (jsonString == null) {
-      if (kDebugMode) {
-        debugPrint('⚠️ [STORE_STORAGE] Nenhuma loja em cache');
-      }
-      return [];
-    }
-    final List<dynamic> jsonList = json.decode(jsonString);
-    final stores = jsonList.map((e) => LojaModel.fromJson(e as Map<String, dynamic>)).toList();
-    if (kDebugMode) {
-      debugPrint('✅ [STORE_STORAGE] ${stores.length} lojas carregadas do cache');
-    }
-    return stores;
-  }
-
+  /// Limpa todos os dados do storage
   Future<void> clear() async {
-    await _prefs.remove(_keyStoreId);
-    await _prefs.remove(_keyStores);
-    if (kDebugMode) {
-      debugPrint('🗑️ [STORE_STORAGE] Dados de loja limpos');
-    }
+    debugPrint('🏪 [STORE_STORAGE] 🧹 Limpando dados...');
+    await _prefs.remove(_selectedStoreIdKey);
+    await _prefs.remove(_storesKey);
+    debugPrint('🏪 [STORE_STORAGE] ✅ Dados removidos');
+  }
+
+  /// Limpa apenas o ID da loja selecionada
+  Future<void> clearSelectedStoreId() async {
+    await _prefs.remove(_selectedStoreIdKey);
+    debugPrint('🏪 [STORE_STORAGE] Loja selecionada removida');
   }
 }

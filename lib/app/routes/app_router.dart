@@ -11,6 +11,7 @@ import '../modules/configuracoes/views/configuracoes_loja_page.dart';
 import '../modules/store/views/store_selection_page.dart';
 import '../modules/pedidos/views/pedidos_list_page.dart';
 import '../modules/dashboard/views/dashboard_screen.dart';
+import '../core/navigation/navigation_observer.dart';
 
 // 🔑 Chaves de navegação
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -18,13 +19,15 @@ final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
-  initialLocation: '/',
+  initialLocation: '/pedidos', // 🔥 TELA INICIAL = PEDIDOS
   debugLogDiagnostics: true,
+  observers: [NavigationObserver()],
   routes: [
     // ============= ROTAS PÚBLICAS =============
     GoRoute(
       path: '/',
       name: 'splash',
+      redirect: (context, state) => '/pedidos', // 🔥 Redireciona raiz para pedidos
       builder: (context, state) {
         debugPrint('🔄 [ROUTER] Abrindo Splash');
         return const SplashScreen();

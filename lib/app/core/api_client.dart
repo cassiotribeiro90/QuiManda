@@ -14,7 +14,7 @@ class ApiClient {
   final TokenService _tokenService;
   final StoreStorage _storeStorage;
 
-  ApiClient(this._tokenService, this._storeStorage) {
+  ApiClient(this._tokenService, this._storeStorage, {bool addInterceptors = true}) {
     dio = Dio(BaseOptions(
       baseUrl: AppConstants.baseUrl,
       connectTimeout: const Duration(seconds: 15),
@@ -69,6 +69,11 @@ class ApiClient {
         return handler.next(response);
       },
       onError: (e, handler) {
+        // 🔥 NÃO loga 401 para não assustar o usuário (o RefreshInterceptor vai tratar)
+        if (e.response?.statusCode == 401) {
+          return handler.next(e);
+        }
+
         // 🔥 LOG DETALHADO DO ERRO
         debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         debugPrint('❌ [ApiClient] ERRO NA REQUISIÇÃO');
@@ -86,12 +91,15 @@ class ApiClient {
       },
     ));
 
-    // Adiciona o RefreshInterceptor para lidar com 401
-    dio.interceptors.add(RefreshInterceptor(
-      dio: dio,
-      tokenService: _tokenService,
-      navigatorKey: navigatorKey,
-    ));
+    if (addInterceptors) {
+      // Adiciona o RefreshInterceptor para lidar com 401
+      dio.interceptors.add(RefreshInterceptor(
+        dio: dio,
+        tokenService: _tokenService,
+        navigatorKey: navigatorKey,
+        storeStorage: _storeStorage, // 🔥 PASSA O STORE STORAGE
+      ));
+    }
   }
 
   Future<Response> get(String path, {Map<String, dynamic>? queryParams}) {

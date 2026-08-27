@@ -78,8 +78,8 @@ class SideMenu extends StatelessWidget {
               builder: (context) {
                 // Determina o índice atual baseado na URL (GoRouter)
                 final String location = GoRouterState.of(context).uri.toString();
-                int currentIndex = 0;
-                if (location.contains('pedidos')) currentIndex = 1;
+                int currentIndex = 0; // Default: Pedidos
+                if (location.contains('dashboard')) currentIndex = 1;
                 else if (location.contains('cardapio')) currentIndex = 2;
                 else if (location.contains('configuracoes')) currentIndex = 3;
 
@@ -88,16 +88,16 @@ class SideMenu extends StatelessWidget {
                   children: [
                     _buildMenuItem(
                       context,
-                      icon: Icons.dashboard,
-                      label: 'Dashboard',
-                      route: '/dashboard',
+                      icon: Icons.receipt_long,
+                      label: 'Pedidos',
+                      route: '/pedidos',
                       isSelected: currentIndex == 0,
                     ),
                     _buildMenuItem(
                       context,
-                      icon: Icons.receipt_long,
-                      label: 'Pedidos',
-                      route: '/pedidos',
+                      icon: Icons.dashboard,
+                      label: 'Dashboard',
+                      route: '/dashboard',
                       isSelected: currentIndex == 1,
                     ),
                     _buildMenuItem(

@@ -1,14 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/api_client.dart';
+import '../../../core/constants.dart';
+import '../../../services/token_service.dart';
+import '../../../core/storage/store_storage.dart';
 
 class AuthService {
-  final ApiClient _apiClient;
+  final TokenService _tokenService;
+  final StoreStorage _storeStorage;
+  late final ApiClient _apiClient;
 
-  AuthService(this._apiClient);
+  AuthService(this._tokenService, this._storeStorage) {
+    _apiClient = ApiClient(_tokenService, _storeStorage, addInterceptors: false);
+  }
 
   /// Envia OTP para o telefone do lojista
-  /// POST /api/lojista/auth-lojista/phone
   Future<Map<String, dynamic>> sendOtp(String telefone) async {
     final response = await _apiClient.dio.post(
       '/api/lojista/auth-lojista/phone',
@@ -18,7 +24,6 @@ class AuthService {
   }
 
   /// Verifica OTP e autentica o lojista
-  /// POST /api/lojista/auth-lojista/verify-otp
   Future<Map<String, dynamic>> verifyOtp(String telefone, String codigo, {String? deviceId, String? deviceToken}) async {
     final data = {
       'phone': telefone,
@@ -38,7 +43,6 @@ class AuthService {
   }
 
   /// Login com email e senha (fallback)
-  /// POST /api/lojista/auth-lojista/login
   Future<Map<String, dynamic>> login(String email, String senha, {String? deviceId, String? deviceToken}) async {
     final data = {
       'email': email,
@@ -58,23 +62,32 @@ class AuthService {
   }
 
   /// Refresh token
-  /// POST /api/lojista/auth-lojista/refresh-token
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     debugPrint('🔄 [AUTH_SERVICE] Chamando refresh-token...');
     try {
-      final response = await _apiClient.dio.post(
+      // 🔥 Usa um Dio separado SEM interceptors para evitar loop
+      final dio = Dio(BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      ));
+
+      final response = await dio.post(
         '/api/lojista/auth-lojista/refresh-token',
         data: {'refresh_token': refreshToken},
         options: Options(
-          // ⚠️ IMPORTANTE: Remove o Authorization header para evitar loop com token expirado
+          // 🔥 Remove o Authorization header para evitar loop
           headers: {
             'Authorization': null,
-            'Content-Type': 'application/json',
           },
         ),
       );
+
       debugPrint('✅ [AUTH_SERVICE] Resposta do refresh-token recebida');
-      return response.data;
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       debugPrint('❌ [AUTH_SERVICE] Erro na chamada de refresh-token: $e');
       rethrow;
@@ -82,26 +95,30 @@ class AuthService {
   }
 
   /// Logout
-  /// POST /api/lojista/auth-lojista/logout
   Future<Map<String, dynamic>> logout() async {
     final response = await _apiClient.dio.post('/api/lojista/auth-lojista/logout');
     return response.data;
   }
 
   /// Busca dados do lojista autenticado
-  /// GET /api/lojista/auth-lojista/me
   Future<Map<String, dynamic>> getMe() async {
     final response = await _apiClient.dio.get('/api/lojista/auth-lojista/me');
     return response.data;
   }
 
   /// Criar nova conta de lojista
-  /// POST /api/lojista/auth-lojista/create
   Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
     final response = await _apiClient.dio.post(
       '/api/lojista/auth-lojista/create',
       data: data,
     );
     return response.data;
+  }
+
+  /// Metodo para fazer logout forçado (apenas local)
+  Future<void> forceLogout() async {
+    debugPrint('🔐 [AUTH] Forçando logout local...');
+    await _tokenService.clear();
+    await _storeStorage.clear();
   }
 }

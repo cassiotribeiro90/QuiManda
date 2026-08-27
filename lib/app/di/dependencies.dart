@@ -37,12 +37,15 @@ Future<void> setupDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
   
+  // 🔥 1. Cria o StoreStorage (async)
+  final storeStorage = await StoreStorage.create();
+  getIt.registerSingleton<StoreStorage>(storeStorage);
+  
   // Services
   getIt.registerLazySingleton<StorageService>(() => StorageService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TtsConfigService>(() => TtsConfigService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<DeviceService>(() => DeviceService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
-  getIt.registerLazySingleton<StoreStorage>(() => StoreStorage(getIt<SharedPreferences>()));
   
   getIt.registerLazySingleton<StoreCubit>(() => StoreCubit(getIt<StoreStorage>()));
 
@@ -61,13 +64,17 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<HomeCubit>(() => HomeCubit());
 
   // Auth
-  getIt.registerLazySingleton<AuthService>(() => AuthService(getIt<ApiClient>()));
+  getIt.registerLazySingleton<AuthService>(() => AuthService(
+    getIt<TokenService>(),
+    getIt<StoreStorage>(),
+  ));
   getIt.registerFactory<AuthCubit>(() => AuthCubit(
     authService: getIt<AuthService>(), 
     tokenService: getIt<TokenService>(), 
     storageService: getIt<StorageService>(), 
     fcmService: getIt<FcmService>(),
     deviceService: getIt<DeviceService>(),
+    storeStorage: getIt<StoreStorage>(),
   ));
 
 

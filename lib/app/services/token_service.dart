@@ -103,6 +103,11 @@ class TokenService {
     debugPrint('✅ [TOKEN] Dados removidos');
   }
 
+  // 🔥 Mantido para compatibilidade
+  Future<void> clearAll() async {
+    await clear();
+  }
+
   // 🔥 8. SALVAR STORE ID
   Future<void> saveStoreId(String storeId) async {
     await _storage.write(key: _storeIdKey, value: storeId);

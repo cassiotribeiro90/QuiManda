@@ -14,15 +14,16 @@ class StoreCubit extends Cubit<StoreState> {
     debugPrint('🏪 [STORE] loadStores iniciado');
     emit(const StoreLoading());
     try {
-      final stores = _storage.getStores();
+      final storesJson = _storage.getStores();
       final selectedId = _storage.getSelectedStoreId();
       
-      if (stores.isEmpty) {
+      if (storesJson == null || storesJson.isEmpty) {
         debugPrint('⚠️ [STORE] Nenhuma loja encontrada');
         emit(const StoreEmpty());
         return;
       }
 
+      final stores = storesJson.map((json) => LojaModel.fromJson(json)).toList();
       debugPrint('✅ [STORE] Lojas carregadas: ${stores.length}, ID selecionado: $selectedId');
 
       // Se não houver loja selecionada, seleciona a primeira
@@ -81,7 +82,7 @@ class StoreCubit extends Cubit<StoreState> {
   // Atualiza a lista de lojas (usado após login/refresh)
   Future<void> updateStores(List<LojaModel> stores, {int? selectedId}) async {
     debugPrint('🔄 [STORE] Atualizando lista com ${stores.length} lojas');
-    await _storage.saveStores(stores);
+    await _storage.saveStores(stores.map((s) => s.toJson()).toList());
     
     if (stores.isEmpty) {
       debugPrint('⚠️ [STORE] Lista de lojas vazia no update');
