@@ -28,18 +28,74 @@
 - ⚙️ **Configurações**: Personalização do app e loja
 - 🔔 **Notificações**: Push notifications com Firebase Messaging
 - 🗣️ **TTS**: Leitura de pedidos em voz alta (Web)
+- 🗺️ **Mapa**: Visualização de entrega com OpenStreetMap unificado
 
 ### 🛠️ Tecnologias
 
 | Tecnologia | Versão | Uso |
 |------------|--------|-----|
 | Flutter | 3.41.2 | Framework principal |
-| Dart | 3.11.0 | Linguagem |
+| OpenStreetMap | Leaflet.js | Mapas e Localização |
 | GoRouter | 13.2.5 | Navegação |
 | Firebase | Latest | Autenticação, FCM |
 | Flutter Bloc | 8.1.3 | Gerenciamento de estado |
 | Dio | Latest | Requisições HTTP |
+| WebView | Latest | Android, iOS, Windows |
 | Shelf | 1.4.0 | Servidor SPA |
+
+---
+
+## 🗺️ Mapa com OpenStreetMap
+
+Sistema de mapa unificado usando OpenStreetMap via WebView nativo em todas as plataformas.
+
+### Uso Básico
+```dart
+OpenStreetMapWidget(
+  latitude: -23.5505,
+  longitude: -46.6333,
+  zoom: 15,
+)
+```
+
+### Com Marcadores e Título
+```dart
+OpenStreetMapWidget(
+  latitude: -23.5505,
+  longitude: -46.6333,
+  title: 'Minha Loja',
+  zoom: 18,
+)
+```
+
+### Selecionar Localização Interativamente
+```dart
+final location = await Navigator.push<LocationEntity>(
+  context,
+  MaterialPageRoute(
+    builder: (context) => MapPage(
+      initialLocation: LocationEntity(latitude: -23.5505, longitude: -46.6333),
+      isSelectable: true,
+    ),
+  ),
+);
+```
+
+### 🔧 Configuração do Mapa
+
+**Android:** `android/app/src/main/AndroidManifest.xml`
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+**iOS:** `ios/Runner/Info.plist`
+```xml
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+</dict>
+```
 
 ---
 
