@@ -63,25 +63,36 @@ class RefreshInterceptor extends Interceptor {
     }
 
     debugPrint('⚠️ [API] Token expirado (401) em $requestPath. Iniciando refresh...');
-    // 🔥 Tenta refresh
-    await _handleRefresh(err, handler);
+    // 🔥 Tenta refresh com timeout de 15s para não travar a aplicação
+    try {
+      await _handleRefresh(err, handler).timeout(const Duration(seconds: 15));
+    } catch (e) {
+      debugPrint('❌ [API] Timeout ou erro fatal no processo de refresh: $e');
+      _isRefreshing = false;
+      await _forceLogout();
+      if (!handler.isCompleted) {
+        handler.next(err);
+      }
+    }
   }
 
   Future<void> _handleRefresh(DioException err, ErrorInterceptorHandler handler) async {
     _isRefreshing = true;
-    debugPrint('🔄 [API] Tentando refresh token (silencioso)...');
+    debugPrint('🔄 [API] Refresh Interceptor: Buscando refresh token...');
 
     try {
       final refreshToken = await tokenService.getRefreshToken();
+      debugPrint('🔑 [API] Refresh token: ${refreshToken != null ? 'encontrado' : 'NÃO ENCONTRADO'}');
       
       if (refreshToken == null) {
-        debugPrint('❌ [API] Refresh token não encontrado');
+        debugPrint('❌ [API] Abortando refresh: token nulo');
         await _forceLogout();
         handler.next(err);
         return;
       }
 
-      // 🔥 Chama o refresh via AuthService (que usa um Dio limpo internamente)
+      debugPrint('📤 [API] Chamando endpoint de refresh...');
+      // 🔥 O refresh agora usa logs internos para sabermos se o backend respondeu
       final response = await _authService.refreshToken(refreshToken);
 
       if (response['success'] == true) {
@@ -90,30 +101,36 @@ class RefreshInterceptor extends Interceptor {
         final newRefreshToken = data['refresh_token'];
 
         if (newAccessToken != null) {
+          debugPrint('✅ [API] Novo Access Token recebido: ${newAccessToken.substring(0, 10)}...');
+          
           // 🔥 Salva os novos tokens
           await tokenService.saveTokens(newAccessToken, newRefreshToken ?? refreshToken);
-          debugPrint('✅ [API] Refresh bem-sucedido (silencioso)');
+          debugPrint('✅ [API] Tokens persistidos com sucesso');
 
           // 🔥 Reexecuta a requisição original
           final options = err.requestOptions;
           options.headers['Authorization'] = 'Bearer $newAccessToken';
 
+          debugPrint('🔁 [API] Reexecutando requisição original: ${options.path}');
           final retryResponse = await dio.fetch(options);
           handler.resolve(retryResponse);
 
           // 🔥 Reexecuta requisições pendentes
           await _processPendingRequests(newAccessToken);
           return;
+        } else {
+          debugPrint('❌ [API] Backend retornou sucesso mas sem token');
         }
+      } else {
+        debugPrint('❌ [API] Backend recusou o refresh: ${response['message']}');
       }
     } catch (e) {
-      debugPrint('❌ [API] Erro no refresh: $e');
+      debugPrint('❌ [API] Exceção durante o fluxo de refresh: $e');
     } finally {
       _isRefreshing = false;
     }
 
-    // 🔥 Se chegou aqui, o refresh falhou
-    debugPrint('❌ [API] Falha no refresh - redirecionando para login');
+    debugPrint('❌ [API] Refresh falhou completamente - forçando logout');
     await _forceLogout();
     handler.next(err);
   }

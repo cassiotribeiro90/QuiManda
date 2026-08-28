@@ -40,9 +40,6 @@ void main() async {
   debugPrint('📦 [MAIN] Configurando injeção de dependências...');
   await setupDependencies();
   
-  debugPrint('🔔 [MAIN] Inicializando FCM Service...');
-  await getIt<FcmService>().init();
-  
   runApp(const QuiMandaApp());
   debugPrint('✅ [MAIN] App carregado com sucesso');
 }

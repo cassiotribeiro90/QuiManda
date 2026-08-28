@@ -3,9 +3,12 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 void main() async {
+  // 🔥 Define o diretório base como 'build/web'
+  const baseDir = 'build/web';
+
   final handler = const Pipeline()
       .addMiddleware(logRequests())
-      .addHandler(_staticHandler);
+      .addHandler(_createStaticHandler(baseDir));
 
   final server = await shelf_io.serve(
     handler,
@@ -14,32 +17,34 @@ void main() async {
   );
 
   print('✅ Servidor SPA rodando em: http://localhost:8000');
-  print('📋 Todas as rotas redirecionam para index.html');
+  print('📋 Servindo arquivos de: $baseDir');
   print('📋 Pressione Ctrl+C para parar');
 }
 
-Response _staticHandler(Request request) {
-  var path = request.url.path;
-  if (path.isEmpty) path = 'index.html';
+Handler _createStaticHandler(String baseDir) {
+  return (Request request) {
+    var path = request.url.path;
+    if (path.isEmpty) path = 'index.html';
 
-  final file = File(path);
-  if (file.existsSync()) {
-    return Response.ok(
-      file.readAsBytesSync(),
-      headers: {'Content-Type': _getContentType(path)},
-    );
-  }
+    final file = File('$baseDir/$path');
+    if (file.existsSync()) {
+      return Response.ok(
+        file.readAsBytesSync(),
+        headers: {'Content-Type': _getContentType(path)},
+      );
+    }
 
-  // SPA: redireciona para index.html
-  final indexFile = File('index.html');
-  if (indexFile.existsSync()) {
-    return Response.ok(
-      indexFile.readAsBytesSync(),
-      headers: {'Content-Type': 'text/html'},
-    );
-  }
+    // SPA: redireciona para index.html
+    final indexFile = File('$baseDir/index.html');
+    if (indexFile.existsSync()) {
+      return Response.ok(
+        indexFile.readAsBytesSync(),
+        headers: {'Content-Type': 'text/html'},
+      );
+    }
 
-  return Response.notFound('Arquivo não encontrado');
+    return Response.notFound('Arquivo não encontrado');
+  };
 }
 
 String _getContentType(String path) {

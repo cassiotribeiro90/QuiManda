@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -117,14 +118,14 @@ class AuthCubit extends Cubit<AuthState> {
       final response = await _authService.verifyOtp(telLimpo, codigo, deviceId: deviceId, deviceToken: fcmToken);
       
       if (response['success'] == true) {
-        debugPrint('✅ [AUTH] OTP verificado');
+        debugPrint('✅ [AUTH] OTP verificado. Resposta completa: ${jsonEncode(response)}');
         final authData = AuthResponse.fromJson(response);
         
         final accessToken = authData.accessToken;
         final refreshToken = authData.refreshToken;
         
         if (accessToken == null || refreshToken == null) {
-          debugPrint('❌ [AUTH] Tokens não encontrados na resposta');
+          debugPrint('❌ [AUTH] Tokens não encontrados na resposta. access=$accessToken, refresh=$refreshToken');
           emit(AuthError('Erro ao obter tokens de autenticação'));
           return;
         }
@@ -143,16 +144,21 @@ class AuthCubit extends Cubit<AuthState> {
         
         await _tokenService.saveLojista(response['data']['lojista']);
 
+        debugPrint('🎯 [AUTH] Enviando token para o backend...');
         await _fcmService.sendTokenToBackend();
+        
+        debugPrint('🏪 [AUTH] Atualizando lojas...');
         await getIt<StoreCubit>().updateStores(authData.lojas);
 
+        debugPrint('🧭 [AUTH] Login concluído com sucesso. Emitindo AuthAuthenticated...');
         emit(AuthAuthenticated(authData.lojista!, accessToken));
       } else {
         debugPrint('❌ [AUTH] Código OTP inválido: ${response['message']}');
         emit(AuthError(response['message'] ?? 'Código inválido'));
       }
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('❌ [AUTH] Exceção ao verificar OTP: $e');
+      debugPrint(stack.toString());
       emit(AuthError(e.toString()));
     }
   }

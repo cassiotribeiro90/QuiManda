@@ -11,13 +11,23 @@ class NavigationCubit extends Cubit<NavigationState> {
   // ============= MÉTODOS PÚBLICOS =============
   
   void push(String location, {Object? extra}) {
-    debugPrint('📤 [NAVIGATION] Push para: $location');
-    emit(NavigationState.push(location, extra: extra));
+    debugPrint('📤 [NAVIGATION] Push solicitado para: $location');
+    try {
+      emit(NavigationState.push(location, extra: extra));
+    } catch (e, stack) {
+      debugPrint('❌ [NAVIGATION] Erro ao emitir push: $e');
+      debugPrint(stack.toString());
+    }
   }
 
   void go(String location, {Object? extra}) {
-    debugPrint('🚀 [NAVIGATION] Go para: $location (substituindo pilha)');
-    emit(NavigationState.go(location, extra: extra));
+    debugPrint('🚀 [NAVIGATION] Go solicitado para: $location');
+    try {
+      emit(NavigationState.go(location, extra: extra));
+    } catch (e, stack) {
+      debugPrint('❌ [NAVIGATION] Erro ao emitir go: $e');
+      debugPrint(stack.toString());
+    }
   }
 
   void pop() {

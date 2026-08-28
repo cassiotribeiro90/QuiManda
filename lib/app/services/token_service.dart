@@ -21,28 +21,41 @@ class TokenService {
   // 🔥 1. SALVAR TOKENS
   Future<void> saveTokens(String accessToken, String refreshToken, {String? tokenType, int? expiresIn}) async {
     debugPrint('🔐 [TOKEN] Salvando tokens...');
-    await _storage.write(key: _accessTokenKey, value: accessToken);
-    await _storage.write(key: _refreshTokenKey, value: refreshToken);
     
-    if (tokenType != null) {
-      await _storage.write(key: _tokenTypeKey, value: tokenType);
+    if (refreshToken.isEmpty) {
+      debugPrint('⚠️ [TOKEN] AVISO: Refresh Token está vazio!');
     }
-    if (expiresIn != null) {
-      await _storage.write(key: _expiresInKey, value: expiresIn.toString());
+
+    if (kIsWeb) {
+      await _prefs.setString(_accessTokenKey, accessToken);
+      await _prefs.setString(_refreshTokenKey, refreshToken);
+      if (tokenType != null) await _prefs.setString(_tokenTypeKey, tokenType);
+      if (expiresIn != null) await _prefs.setString(_expiresInKey, expiresIn.toString());
+    } else {
+      await _storage.write(key: _accessTokenKey, value: accessToken);
+      await _storage.write(key: _refreshTokenKey, value: refreshToken);
+      if (tokenType != null) {
+        await _storage.write(key: _tokenTypeKey, value: tokenType);
+      }
+      if (expiresIn != null) {
+        await _storage.write(key: _expiresInKey, value: expiresIn.toString());
+      }
     }
     
-    debugPrint('✅ [TOKEN] Tokens salvos com sucesso');
-    debugPrint('   Access Token: ${accessToken.substring(0, 10)}...');
-    debugPrint('   Refresh Token: ${refreshToken.substring(0, 10)}...');
+    // 🔥 VERIFICAÇÃO DE SALVAMENTO (Especialmente para Web)
+    final savedRefresh = await getRefreshToken();
+    debugPrint('✅ [TOKEN] Tokens salvos. Refresh detectado: ${savedRefresh != null ? 'SIM' : 'NÃO'}');
   }
 
   // 🔥 2. OBTER ACCESS TOKEN
   Future<String?> getAccessToken() async {
+    if (kIsWeb) return _prefs.getString(_accessTokenKey);
     return await _storage.read(key: _accessTokenKey);
   }
 
   // 🔥 3. OBTER REFRESH TOKEN
   Future<String?> getRefreshToken() async {
+    if (kIsWeb) return _prefs.getString(_refreshTokenKey);
     return await _storage.read(key: _refreshTokenKey);
   }
 
@@ -53,19 +66,24 @@ class TokenService {
     final hasBoth = accessToken != null && accessToken.isNotEmpty && 
                     refreshToken != null && refreshToken.isNotEmpty;
     
-    debugPrint('🔐 [TOKEN] Verificando tokens: access=${accessToken != null}, refresh=${refreshToken != null}');
+    debugPrint('🔐 [TOKEN] Status: access=${accessToken != null}, refresh=${refreshToken != null}');
     return hasBoth;
   }
 
   // 🔥 5. SALVAR APENAS ACCESS TOKEN (APÓS REFRESH)
   Future<void> saveAccessToken(String accessToken) async {
-    debugPrint('🔐 [TOKEN] Salvando novo access token...');
-    await _storage.write(key: _accessTokenKey, value: accessToken);
+    debugPrint('🔐 [TOKEN] Atualizando access token...');
+    if (kIsWeb) {
+      await _prefs.setString(_accessTokenKey, accessToken);
+    } else {
+      await _storage.write(key: _accessTokenKey, value: accessToken);
+    }
     debugPrint('✅ [TOKEN] Access token atualizado');
   }
 
   // 🔥 6. SALVAR DADOS DO LOJISTA
   Future<void> saveLojista(Map<String, dynamic> lojista) async {
+    debugPrint('🔐 [TOKEN] Salvando dados do lojista no SharedPreferences');
     if (lojista['id'] != null) {
       await _prefs.setInt(_lojistaIdKey, lojista['id'] as int);
     }
@@ -91,16 +109,24 @@ class TokenService {
   // 🔥 7. LIMPAR TOKENS E DADOS
   Future<void> clear() async {
     debugPrint('🔐 [TOKEN] Limpando todos os tokens e dados...');
-    await _storage.delete(key: _accessTokenKey);
-    await _storage.delete(key: _refreshTokenKey);
-    await _storage.delete(key: _tokenTypeKey);
-    await _storage.delete(key: _expiresInKey);
-    await _storage.delete(key: _storeIdKey);
+    if (kIsWeb) {
+      await _prefs.remove(_accessTokenKey);
+      await _prefs.remove(_refreshTokenKey);
+      await _prefs.remove(_tokenTypeKey);
+      await _prefs.remove(_expiresInKey);
+      await _prefs.remove(_storeIdKey);
+    } else {
+      await _storage.delete(key: _accessTokenKey);
+      await _storage.delete(key: _refreshTokenKey);
+      await _storage.delete(key: _tokenTypeKey);
+      await _storage.delete(key: _expiresInKey);
+      await _storage.delete(key: _storeIdKey);
+    }
     
     await _prefs.remove(_lojistaIdKey);
     await _prefs.remove(_lojistaNomeKey);
     await _prefs.remove(_lojistaDataKey);
-    debugPrint('✅ [TOKEN] Dados removidos');
+    debugPrint('✅ [TOKEN] Todos os dados removidos localmente');
   }
 
   // 🔥 Mantido para compatibilidade
@@ -110,10 +136,15 @@ class TokenService {
 
   // 🔥 8. SALVAR STORE ID
   Future<void> saveStoreId(String storeId) async {
-    await _storage.write(key: _storeIdKey, value: storeId);
+    if (kIsWeb) {
+      await _prefs.setString(_storeIdKey, storeId);
+    } else {
+      await _storage.write(key: _storeIdKey, value: storeId);
+    }
   }
 
   Future<String?> getStoreId() async {
+    if (kIsWeb) return _prefs.getString(_storeIdKey);
     return await _storage.read(key: _storeIdKey);
   }
 }

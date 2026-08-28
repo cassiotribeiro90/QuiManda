@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../modules/auth/cubit/auth_cubit.dart';
+import '../di/dependencies.dart';
+import '../core/services/fcm_service.dart';
 
 /// Widget responsável por inicializar o app antes da navegação
 class AppInitializer extends StatefulWidget {
@@ -18,11 +20,15 @@ class _AppInitializerState extends State<AppInitializer> {
     super.initState();
     debugPrint('🚀 [INIT] Inicializando aplicação quiManda...');
     
-    // ⚠️ Dispara a verificação de autenticação após o primeiro frame
+    // ⚠️ Dispara a verificação de autenticação e serviços após o primeiro frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         debugPrint('✅ [INIT] Disparando checkAuthStatus no AuthCubit...');
         context.read<AuthCubit>().checkAuthStatus();
+
+        // 🔥 Inicializa FCM de forma assíncrona para não travar a tela
+        debugPrint('🔔 [INIT] Inicializando FCM Service (background)...');
+        getIt<FcmService>().init();
       }
     });
   }

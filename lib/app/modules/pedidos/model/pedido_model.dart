@@ -30,6 +30,8 @@ class PedidoModel extends Equatable {
   final dynamic entregador;
   final int tempoEspera;
   final int naoLidas;
+  final double? latitude;
+  final double? longitude;
 
   const PedidoModel({
     required this.id,
@@ -58,6 +60,8 @@ class PedidoModel extends Equatable {
     this.entregador,
     this.tempoEspera = 0,
     this.naoLidas = 0,
+    this.latitude,
+    this.longitude,
   });
 
   factory PedidoModel.fromJson(Map<String, dynamic> json) {
@@ -77,6 +81,17 @@ class PedidoModel extends Equatable {
       try {
         endereco = jsonDecode(endereco);
       } catch (_) {}
+    }
+
+    double? lat;
+    double? lng;
+
+    if (endereco is Map<String, dynamic>) {
+      lat = (endereco['latitude'] as num?)?.toDouble() ?? (endereco['lat'] as num?)?.toDouble();
+      lng = (endereco['longitude'] as num?)?.toDouble() ?? (endereco['lng'] as num?)?.toDouble();
+    } else {
+      lat = (json['latitude'] as num?)?.toDouble() ?? (json['lat'] as num?)?.toDouble();
+      lng = (json['longitude'] as num?)?.toDouble() ?? (json['lng'] as num?)?.toDouble();
     }
 
     return PedidoModel(
@@ -106,6 +121,8 @@ class PedidoModel extends Equatable {
       entregador: json['entregador'],
       tempoEspera: json['tempo_espera'] as int? ?? 0,
       naoLidas: json['nao_lidas'] as int? ?? 0,
+      latitude: lat,
+      longitude: lng,
     );
   }
 

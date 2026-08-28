@@ -4,6 +4,7 @@ import '../../../core/app_theme.dart';
 import '../model/pedido_model.dart';
 import 'timer_widget.dart';
 import 'status_badge_widget.dart';
+import 'pedido_mapa.dart';
 
 class PedidoCardWidget extends StatelessWidget {
   final PedidoModel pedido;
@@ -128,6 +129,9 @@ class PedidoCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNovo = this.isNovo;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 🔥 LOG PARA DEPURAÇÃO DE COORDENADAS
+    debugPrint('📍 [PedidoCardWidget] Pedido #${pedido.id}: lat=${pedido.latitude}, lng=${pedido.longitude}');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -385,6 +389,14 @@ class PedidoCardWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
             ],
+
+            // ==================== MAPA ====================
+            PedidoMapa(
+              latitude: pedido.latitude,
+              longitude: pedido.longitude,
+              enderecoResumido: _formatarEndereco(pedido.enderecoEntrega),
+            ),
+            const SizedBox(height: 16),
 
             // ==================== AÇÕES ====================
             if (_temAcaoPrincipal) ...[
