@@ -35,14 +35,39 @@ class OsmHtmlBuilder {
         
         /* Ocultar atribuição para economizar espaço em widgets pequenos */
         .leaflet-control-attribution { font-size: 8px !important; }
+        
+        /* 🔥 DESABILITA SCROLL NO CONTAINER DO MAPA */
+        .leaflet-container {
+            touch-action: none !important;
+            cursor: grab;
+        }
+        
+        .leaflet-container:active {
+            cursor: grabbing;
+        }
+        
+        /* 🔥 BOTÕES DE ZOOM CONTINUAM FUNCIONANDO */
+        .leaflet-control-zoom {
+            touch-action: none !important;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <script>
+        // 🔥 MAPA COM ZOOM DESABILITADO POR SCROLL
         var map = L.map('map', {
-            zoomControl: true,
-            attributionControl: true
+            zoomControl: true,           // Botões de zoom (+ e -) visíveis
+            attributionControl: true,
+            scrollWheelZoom: false,      // 🔥 Desabilita scroll do mouse
+            touchZoom: false,            // 🔥 Desabilita zoom com toque (pinch)
+            doubleClickZoom: false,      // 🔥 Desabilita duplo clique
+            boxZoom: false,              // 🔥 Desabilita seleção de área
+            dragging: true,              // Mantém arrastar para mover o mapa
+            bounceAtZoomLimits: false,
+            fadeAnimation: true,
+            zoomAnimation: true,
+            markerZoomAnimation: true,
         }).setView([$initialLat, $initialLng], $initialZoom);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -99,6 +124,41 @@ class OsmHtmlBuilder {
             markers = [];
             polylines = [];
         };
+
+        // 🔥 BLOQUEIA EVENTOS DE SCROLL NO CONTAINER DO MAPA
+        var container = map.getContainer();
+        
+        // Bloqueia scroll do mouse (roda do mouse)
+        container.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }, { passive: false });
+
+        // Bloqueia touch move (arrastar com dois dedos no mobile)
+        container.addEventListener('touchmove', function(e) {
+            // Permite apenas se for um único toque (arrastar normal)
+            if (e.touches && e.touches.length > 1) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
+        // Bloqueia gestos de dois dedos (pinch)
+        container.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        container.addEventListener('gesturechange', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        container.addEventListener('gestureend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
 
         // Inicializar com o marcador se fornecido
         if ($initialLat && $initialLng) {

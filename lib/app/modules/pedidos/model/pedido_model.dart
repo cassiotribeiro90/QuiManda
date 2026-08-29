@@ -30,6 +30,7 @@ class PedidoModel extends Equatable {
   final dynamic entregador;
   final int tempoEspera;
   final int naoLidas;
+  final int totalMensagens; // 🔥 NOVO CAMPO
   final double? latitude;
   final double? longitude;
 
@@ -60,6 +61,7 @@ class PedidoModel extends Equatable {
     this.entregador,
     this.tempoEspera = 0,
     this.naoLidas = 0,
+    this.totalMensagens = 0, // 🔥 NOVO CAMPO
     this.latitude,
     this.longitude,
   });
@@ -121,6 +123,7 @@ class PedidoModel extends Equatable {
       entregador: json['entregador'],
       tempoEspera: json['tempo_espera'] as int? ?? 0,
       naoLidas: json['nao_lidas'] as int? ?? 0,
+      totalMensagens: json['total_mensagens'] as int? ?? 0, // 🔥 NOVO CAMPO
       latitude: lat,
       longitude: lng,
     );
@@ -147,5 +150,12 @@ class PedidoModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, status, total, tempoEspera, naoLidas];
+  List<Object?> get props => [
+    id,
+    status,
+    total,
+    tempoEspera,
+    naoLidas,
+    totalMensagens, // 🔥 NOVO CAMPO
+  ];
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../../core/app_theme.dart';
+import 'package:quimanda/app/core/theme/app_colors.dart';
+import '../../chat/views/chat_screen.dart';
 import '../model/pedido_model.dart';
 import 'timer_widget.dart';
 import 'status_badge_widget.dart';
@@ -8,7 +8,7 @@ import 'pedido_mapa.dart';
 
 class PedidoCardWidget extends StatelessWidget {
   final PedidoModel pedido;
-  final bool isUpdating; // 🔥 Adicionado
+  final bool isUpdating;
   final VoidCallback onAceitar;
   final VoidCallback onRecusar;
   final void Function(String novoStatus) onAtualizarStatus;
@@ -17,7 +17,7 @@ class PedidoCardWidget extends StatelessWidget {
   const PedidoCardWidget({
     super.key,
     required this.pedido,
-    this.isUpdating = false, // 🔥 Adicionado
+    this.isUpdating = false,
     required this.onAceitar,
     required this.onRecusar,
     required this.onAtualizarStatus,
@@ -36,42 +36,6 @@ class PedidoCardWidget extends StatelessWidget {
       }
     }
     return '#${pedido.id}';
-  }
-
-  String _limparTelefone(String? telefone) {
-    if (telefone == null) return '';
-    return telefone.replaceAll(RegExp(r'[^0-9]'), '');
-  }
-
-  Future<void> _abrirWhatsApp(String? telefone) async {
-    final numero = _limparTelefone(telefone);
-    if (numero.isEmpty) return;
-
-    final uri = Uri.parse('https://wa.me/55$numero');
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      debugPrint('Erro ao abrir WhatsApp: $e');
-    }
-  }
-
-  String _formatarEndereco(dynamic endereco) {
-    if (endereco == null) return '';
-    if (endereco is String) return endereco;
-    try {
-      final e = endereco as Map<String, dynamic>;
-      final partes = [
-        e['logradouro'] ?? e['rua'] ?? '',
-        e['numero'] ?? '',
-        e['bairro'] ?? '',
-        e['cidade'] ?? '',
-      ].where((p) => p.toString().isNotEmpty);
-      return partes.join(', ');
-    } catch (_) {
-      return endereco.toString();
-    }
   }
 
   String _formatarPagamento(String? forma, double? troco) {
@@ -130,7 +94,6 @@ class PedidoCardWidget extends StatelessWidget {
     final isNovo = this.isNovo;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 🔥 LOG PARA DEPURAÇÃO DE COORDENADAS
     debugPrint('📍 [PedidoCardWidget] Pedido #${pedido.id}: lat=${pedido.latitude}, lng=${pedido.longitude}');
 
     return Padding(
@@ -142,7 +105,7 @@ class PedidoCardWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isNovo
-                ? AppTheme.primaryColor.withValues(alpha: 0.3)
+                ? AppColors.primary.withValues(alpha: 0.3)
                 : (isDark ? Colors.grey.shade800 : Colors.grey.shade200),
             width: isNovo ? 1.5 : 1,
           ),
@@ -222,29 +185,88 @@ class PedidoCardWidget extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (pedido.clienteTelefone != null &&
-                    pedido.clienteTelefone!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () => _abrirWhatsApp(pedido.clienteTelefone),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.phone, size: 16, color: AppTheme.successColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          pedido.clienteTelefone!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.successColor,
-                            fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                // ==================== BOTÃO CHAT COM DOIS BADGES ====================
+                InkWell(
+                  onTap: () => _abrirChatApp(context),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.chat,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Chat',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // 🔥 BADGE 1: MENSAGENS NÃO LIDAS (VERMELHO - TOPO)
+                      if (pedido.naoLidas > 0)
+                        Positioned(
+                          top: -6,
+                          right: -8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '${pedido.naoLidas}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      // 🔥 BADGE 2: TOTAL DE MENSAGENS (LARANJA - BAIXO)
+                      if (pedido.totalMensagens > 0)
+                        Positioned(
+                          bottom: -6,
+                          right: -8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 14,
+                              minHeight: 14,
+                            ),
+                            child: Text(
+                              '${pedido.totalMensagens}',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -421,10 +443,10 @@ class PedidoCardWidget extends StatelessWidget {
                       ),
                       child: isUpdating
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
                           : Text(_getTextoBotaoPrincipal()),
                     ),
                   ),
@@ -450,5 +472,36 @@ class PedidoCardWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // 🔥 Metodo para abrir a tela de chat
+  void _abrirChatApp(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          pedidoId: pedido.id,
+        ),
+      ),
+    );
+  }
+
+  String _formatarEndereco(dynamic endereco) {
+    if (endereco == null) return '';
+    if (endereco is String) return endereco;
+    try {
+      final e = endereco as Map<String, dynamic>;
+      final partes = [
+        e['logradouro'] ?? e['rua'] ?? '',
+        e['numero'] ?? '',
+        e['complemento'] ?? '',
+        e['bairro'] ?? '',
+        e['cidade'] ?? '',
+        e['uf'] ?? '',
+      ].where((p) => p.toString().isNotEmpty);
+      return partes.join(', ');
+    } catch (_) {
+      return endereco.toString();
+    }
   }
 }

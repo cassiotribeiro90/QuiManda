@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../model/pedido_model.dart';
 import 'pedido_card_widget.dart';
 
@@ -29,10 +29,10 @@ class PedidoStatusSection extends StatelessWidget {
 
   Color get _corStatus {
     switch (status) {
-      case 'novo': return AppTheme.primaryColor;
-      case 'em_preparo': return AppTheme.warningColor;
-      case 'pronto': return AppTheme.successColor;
-      case 'saiu': return AppTheme.infoColor;
+      case 'novo': return AppColors.primary;
+      case 'em_preparo': return AppColors.warning;
+      case 'pronto': return AppColors.success;
+      case 'saiu': return AppColors.info;
       default: return Colors.grey;
     }
   }

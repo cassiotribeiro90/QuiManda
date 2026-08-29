@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:url_strategy/url_strategy.dart';
-import 'app/core/app_theme.dart';
+import 'app/core/theme/app_theme.dart';
 import 'app/di/dependencies.dart';
 import 'app/modules/auth/cubit/auth_cubit.dart';
 import 'app/modules/dashboard/cubit/dashboard_cubit.dart';
