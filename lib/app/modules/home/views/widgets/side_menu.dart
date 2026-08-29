@@ -1,23 +1,47 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/cubit/auth_cubit.dart';
+import '../../../chat/bloc/chat_badge_cubit.dart';
 import '../../../store/bloc/store_cubit.dart';
 import '../../../store/bloc/store_state.dart';
 import '../../../../navigation/navigation_cubit.dart';
 
-class SideMenu extends StatelessWidget {
+class SideMenu extends StatefulWidget {
   final bool isDrawer;
 
   const SideMenu({super.key, this.isDrawer = false});
 
   @override
+  State<SideMenu> createState() => _SideMenuState();
+}
+
+class _SideMenuState extends State<SideMenu> {
+  Timer? _badgeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _badgeTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      context.read<ChatBadgeCubit>().updateBadge();
+    });
+  }
+
+  @override
+  void dispose() {
+    _badgeTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final nav = context.read<NavigationCubit>();
-    
+
     return Container(
-      width: 260,
+      width: 280,
       color: theme.colorScheme.surface,
       child: Column(
         children: [
@@ -26,7 +50,7 @@ class SideMenu extends StatelessWidget {
             builder: (context, state) {
               String storeName = 'QuiManda';
               String storeAddress = 'Painel do Lojista';
-              
+
               if (state is StoreLoaded) {
                 storeName = state.selectedStore.nome;
                 storeAddress = state.selectedStore.cidade ?? 'Painel do Lojista';
@@ -71,17 +95,17 @@ class SideMenu extends StatelessWidget {
               );
             },
           ),
-          
+
           // Menu Items
           Expanded(
-            child: Builder( // Removido BlocBuilder de HomeCubit
+            child: Builder(
               builder: (context) {
-                // Determina o índice atual baseado na URL (GoRouter)
                 final String location = GoRouterState.of(context).uri.toString();
-                int currentIndex = 0; // Default: Pedidos
+                int currentIndex = 0;
                 if (location.contains('dashboard')) currentIndex = 1;
                 else if (location.contains('cardapio')) currentIndex = 2;
-                else if (location.contains('configuracoes')) currentIndex = 3;
+                else if (location.contains('chat-genericos')) currentIndex = 3;
+                else if (location.contains('configuracoes')) currentIndex = 4;
 
                 return ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -107,16 +131,31 @@ class SideMenu extends StatelessWidget {
                       route: '/cardapio',
                       isSelected: currentIndex == 2,
                     ),
+                    
+                    // 🔥 ATUALIZADO: CHATS COM CHATBADGECUBIT
+                    BlocBuilder<ChatBadgeCubit, int>(
+                      builder: (context, badgeCount) {
+                        return _buildChatMenuItem(
+                          context,
+                          icon: Icons.chat_bubble_outline,
+                          label: 'Conversas com clientes',
+                          route: '/chat-genericos',
+                          isSelected: currentIndex == 3,
+                          badgeCount: badgeCount,
+                        );
+                      },
+                    ),
+
                     _buildMenuItem(
                       context,
                       icon: Icons.settings,
                       label: 'Configurações',
                       route: '/configuracoes',
-                      isSelected: currentIndex == 3,
+                      isSelected: currentIndex == 4,
                     ),
-                    
+
                     const Divider(),
-                    
+
                     BlocBuilder<StoreCubit, StoreState>(
                       builder: (context, storeState) {
                         if (storeState is StoreLoaded && storeState.hasMultipleStores) {
@@ -132,7 +171,7 @@ class SideMenu extends StatelessWidget {
                             ),
                             onTap: () {
                               debugPrint('🏪 [UI_NAV] Abrindo seleção de lojas pelo menu');
-                              if (isDrawer) {
+                              if (widget.isDrawer) {
                                 nav.pop();
                               }
                               nav.goToStoreSelection();
@@ -165,15 +204,15 @@ class SideMenu extends StatelessWidget {
   }
 
   Widget _buildMenuItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String route,
-    required bool isSelected,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required String route,
+        required bool isSelected,
+      }) {
     final theme = Theme.of(context);
     final nav = context.read<NavigationCubit>();
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: ListTile(
@@ -194,8 +233,72 @@ class SideMenu extends StatelessWidget {
         onTap: () {
           debugPrint('🔄 [UI_NAV] Navegando para rota: $route');
           nav.go(route);
-          
-          if (isDrawer) {
+
+          if (widget.isDrawer) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+    );
+  }
+
+  // 🔥 ITEM DO MENU COM BADGE
+  Widget _buildChatMenuItem(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required String route,
+        required bool isSelected,
+        required int badgeCount,
+      }) {
+    final theme = Theme.of(context);
+    final nav = context.read<NavigationCubit>();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected ? theme.primaryColor : theme.iconTheme.color?.withValues(alpha: 0.7),
+        ),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? theme.primaryColor : theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        // 🔥 TRAILING COM BADGE
+        trailing: badgeCount > 0
+            ? Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: const BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+          ),
+          constraints: const BoxConstraints(
+            minWidth: 24,
+            minHeight: 24,
+          ),
+          child: Text(
+            badgeCount > 99 ? '99+' : '$badgeCount',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        )
+            : null,
+        selected: isSelected,
+        selectedTileColor: theme.primaryColor.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        onTap: () {
+          debugPrint('🔄 [UI_NAV] Navegando para rota: $route');
+          nav.go(route);
+
+          if (widget.isDrawer) {
             Navigator.pop(context);
           }
         },

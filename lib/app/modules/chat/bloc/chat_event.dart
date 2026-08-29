@@ -13,7 +13,9 @@ abstract class ChatEvent extends Equatable {
 // ================================================================
 
 /// Carregar lista de chats do cliente
-class CarregarChats extends ChatEvent {}
+class CarregarChats extends ChatEvent {
+  const CarregarChats();
+}
 
 /// Iniciar chat com a loja (obter ou criar)
 class IniciarChatComLoja extends ChatEvent {
@@ -89,17 +91,61 @@ class ArquivarChat extends ChatEvent {
 }
 
 /// Contar mensagens não lidas
-class ContarNaoLidas extends ChatEvent {}
+class ContarNaoLidas extends ChatEvent {
+  const ContarNaoLidas();
+}
 
 // ================================================================
-// 🔥 EVENTOS DO LOJISTA
+// 🔥 EVENTOS DO LOJISTA (Padrão quiGestor)
 // ================================================================
 
 /// Carregar chats do lojista
-class CarregarChatsLojista extends ChatEvent {}
+class ChatLoadChats extends ChatEvent {
+  final bool reset;
+  const ChatLoadChats({this.reset = false});
 
-/// Carregar chats do lojista com mensagens não lidas
-class CarregarChatsLojistaComNaoLidas extends ChatEvent {}
+  @override
+  List<Object?> get props => [reset];
+}
+
+/// Carregar próxima página
+class ChatLoadMore extends ChatEvent {
+  const ChatLoadMore();
+}
+
+class ChatRefresh extends ChatEvent {
+  const ChatRefresh();
+}
+
+class ChatFiltersApplied extends ChatEvent {
+  final Map<String, dynamic> params;
+  const ChatFiltersApplied(this.params);
+
+  @override
+  List<Object?> get props => [params];
+}
+
+/// Aplicar filtros
+class ChatApplyFilters extends ChatEvent {
+  final String? status;
+  final String? periodo;
+  final String? search;
+
+  const ChatApplyFilters({this.status, this.periodo, this.search});
+
+  @override
+  List<Object?> get props => [status, periodo, search];
+}
+
+/// Limpar filtros
+class ChatClearFilters extends ChatEvent {
+  const ChatClearFilters();
+}
+
+/// Atualizar badge de não lidas
+class ChatUpdateNaoLidas extends ChatEvent {
+  const ChatUpdateNaoLidas();
+}
 
 /// Carregar mensagens de um chat (lojista)
 class CarregarMensagensLojista extends ChatEvent {
@@ -150,7 +196,9 @@ class AtualizarStatusChat extends ChatEvent {
 }
 
 /// Contar mensagens não lidas (lojista)
-class ContarNaoLidasLojista extends ChatEvent {}
+class ContarNaoLidasLojista extends ChatEvent {
+  const ContarNaoLidasLojista();
+}
 
 // ================================================================
 // 🔥 EVENTOS DE SINCRONIZAÇÃO
@@ -166,4 +214,6 @@ class NovaMensagemRecebida extends ChatEvent {
 }
 
 /// Limpar estado do chat
-class LimparChat extends ChatEvent {}
+class LimparChat extends ChatEvent {
+  const LimparChat();
+}

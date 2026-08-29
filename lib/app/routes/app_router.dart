@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../modules/chat/views/chat_page.dart';
 import '../widgets/splash_screen.dart';
 import '../modules/auth/views/phone_input_page.dart';
 import '../modules/auth/views/otp_verification_page.dart';
@@ -108,6 +109,14 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) {
             debugPrint('⚙️ [ROUTER] Abrindo Configurações');
             return const ConfiguracoesLojaPage();
+          },
+        ),
+        GoRoute(
+          path: '/chat-genericos',
+          name: 'chat-genericos',
+          builder: (context, state) {
+            debugPrint('💬 [ROUTER] Abrindo Chat Genérico');
+            return const ChatPage();
           },
         ),
       ],

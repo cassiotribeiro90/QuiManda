@@ -17,8 +17,9 @@ class ChatModel extends Equatable {
   final String? lojaNome;
   final String? lojaLogo;
 
-  // Campo virtual para contagem de não lidas
-  final int? naoLidas;
+  // 🔥 CAMPOS VIRTUAIS PARA CONTAGEM
+  final int naoLidas;
+  final int totalMensagens; // 🔥 NOVO CAMPO
 
   const ChatModel({
     required this.id,
@@ -35,14 +36,15 @@ class ChatModel extends Equatable {
     this.lojaNome,
     this.lojaLogo,
     this.naoLidas = 0,
+    this.totalMensagens = 0, // 🔥 NOVO CAMPO
   });
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      clienteId: (json['cliente_id'] as num?)?.toInt() ?? 0,
-      lojaId: (json['loja_id'] as num?)?.toInt() ?? 0,
-      pedidoId: (json['pedido_id'] as num?)?.toInt(),
+      id: _toInt(json['id']),
+      clienteId: _toInt(json['cliente_id']),
+      lojaId: _toInt(json['loja_id']),
+      pedidoId: json['pedido_id'] != null ? _toInt(json['pedido_id']) : null,
       ultimaMensagem: json['ultima_mensagem']?.toString(),
       dataUltimaMensagem: json['data_ultima_mensagem']?.toString(),
       status: json['status']?.toString() ?? 'ativo',
@@ -52,8 +54,19 @@ class ChatModel extends Equatable {
       clienteAvatar: json['cliente_avatar']?.toString(),
       lojaNome: json['loja_nome']?.toString(),
       lojaLogo: json['loja_logo']?.toString(),
-      naoLidas: (json['nao_lidas'] as num?)?.toInt() ?? 0,
+      naoLidas: _toInt(json['nao_lidas']),
+      totalMensagens: _toInt(json['total_mensagens']), // 🔥 NOVO CAMPO
     );
+  }
+
+  // 🔥 FUNÇÃO SEGURA PARA CONVERTER PARA INT
+  static int _toInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is double) return value.toInt();
+    if (value is num) return value.toInt();
+    return 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -72,6 +85,7 @@ class ChatModel extends Equatable {
       'loja_nome': lojaNome,
       'loja_logo': lojaLogo,
       'nao_lidas': naoLidas,
+      'total_mensagens': totalMensagens, // 🔥 NOVO CAMPO
     };
   }
 
@@ -91,6 +105,7 @@ class ChatModel extends Equatable {
     lojaNome,
     lojaLogo,
     naoLidas,
+    totalMensagens, // 🔥 NOVO CAMPO
   ];
 
   // ================================================================
@@ -99,8 +114,10 @@ class ChatModel extends Equatable {
 
   bool get isAtivo => status == 'ativo';
   bool get isArquivado => status == 'arquivado';
-  bool get isBloqueado => status == 'bloqueado_cliente' || status == 'bloqueado_lojista';
-  bool get temMensagemNaoLida => (naoLidas ?? 0) > 0;
+  bool get isBloqueado =>
+      status == 'bloqueado_cliente' || status == 'bloqueado_lojista';
+  bool get temMensagemNaoLida => naoLidas > 0;
+  bool get temMensagens => totalMensagens > 0;
 
   String get statusLabel {
     switch (status) {
@@ -160,6 +177,7 @@ class ChatModel extends Equatable {
     String? lojaNome,
     String? lojaLogo,
     int? naoLidas,
+    int? totalMensagens,
   }) {
     return ChatModel(
       id: id ?? this.id,
@@ -176,6 +194,7 @@ class ChatModel extends Equatable {
       lojaNome: lojaNome ?? this.lojaNome,
       lojaLogo: lojaLogo ?? this.lojaLogo,
       naoLidas: naoLidas ?? this.naoLidas,
+      totalMensagens: totalMensagens ?? this.totalMensagens,
     );
   }
 }

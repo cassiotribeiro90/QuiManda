@@ -1,4 +1,7 @@
 
+import 'package:flutter/cupertino.dart';
+import '../../../models/chat_item.dart';
+import '../../../models/filter_option.dart';
 import '../models/chat_mensagem_model.dart';
 import '../models/chat_model.dart';
 import 'base_repository.dart';
@@ -12,7 +15,7 @@ class ChatRepository extends BaseRepository {
 
   Future<List<ChatModel>> getMeusChats() async {
     try {
-      final response = await dio.get('/api/lojista/chats'); // ✅ adicionado /api
+      final response = await dio.get('/api/lojista/chats');
 
       if (response.data['success'] == true) {
         final chatList = response.data['data'] as List;
@@ -27,7 +30,7 @@ class ChatRepository extends BaseRepository {
 
   Future<ChatModel> criarChat(Map<String, dynamic> data) async {
     try {
-      final response = await dio.post('/api/lojista/chats', data: data); // ✅ /api
+      final response = await dio.post('/api/lojista/chats', data: data);
 
       if (response.data['success'] == true) {
         return ChatModel.fromJson(response.data['data']);
@@ -53,7 +56,7 @@ class ChatRepository extends BaseRepository {
       if (lojaId != null) data['loja_id'] = lojaId;
       if (pedidoId != null) data['pedido_id'] = pedidoId;
 
-      final response = await dio.post('/api/lojista/chats', data: data); // ✅ /api
+      final response = await dio.post('/api/lojista/chats', data: data);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.data['success'] == true) {
@@ -79,7 +82,7 @@ class ChatRepository extends BaseRepository {
 
   Future<ChatModel> getChat(int id) async {
     try {
-      final response = await dio.get('/api/lojista/chats/$id'); // ✅ /api
+      final response = await dio.get('/api/lojista/chats/$id');
 
       if (response.data['success'] == true) {
         return ChatModel.fromJson(response.data['data']);
@@ -93,7 +96,7 @@ class ChatRepository extends BaseRepository {
 
   Future<void> arquivarChat(int id) async {
     try {
-      final response = await dio.delete('/api/lojista/chats/$id'); // ✅ /api
+      final response = await dio.delete('/api/lojista/chats/$id');
 
       if (response.data['success'] != true) {
         throw Exception(response.data['message'] ?? 'Erro ao arquivar chat');
@@ -105,7 +108,7 @@ class ChatRepository extends BaseRepository {
 
   Future<int> contarNaoLidas() async {
     try {
-      final response = await dio.get('/api/lojista/chats/nao-lidas'); // ✅ /api
+      final response = await dio.get('/api/lojista/chats/nao-lidas');
 
       if (response.data['success'] == true) {
         return response.data['data']['total_nao_lidas'] ?? 0;
@@ -122,10 +125,12 @@ class ChatRepository extends BaseRepository {
 
   Future<List<ChatMensagemModel>> getMensagens(int chatId) async {
     try {
-      final response = await dio.get('/api/app/chats/$chatId/mensagens'); // ✅ /api (rota de cliente)
+      debugPrint('📡 [ChatRepository] getMensagens (cliente fallback): /api/lojista/chats/$chatId/mensagens');
+      final response = await dio.get('/api/lojista/chats/$chatId/mensagens'); 
 
       if (response.data['success'] == true) {
         final data = response.data['data'] as List;
+        debugPrint('📥 [ChatRepository] getMensagens retornou ${data.length} mensagens');
         return data.map((item) => ChatMensagemModel.fromJson(item)).toList();
       }
 
@@ -147,8 +152,9 @@ class ChatRepository extends BaseRepository {
         payload['anexo_url'] = data['anexo_url'];
       }
 
+      debugPrint('📡 [ChatRepository] enviarMensagem (cliente fallback): /api/lojista/chats/$chatId/mensagem');
       final response = await dio.post(
-        '/api/app/chats/$chatId/mensagem', // ✅ /api (rota de cliente)
+        '/api/lojista/chats/$chatId/mensagem', 
         data: payload,
       );
 
@@ -164,7 +170,7 @@ class ChatRepository extends BaseRepository {
 
   Future<int> marcarMensagensComoLidas(int chatId) async {
     try {
-      final response = await dio.put('/api/lojista/chats/$chatId/ler'); // ✅ /api
+      final response = await dio.put('/api/lojista/chats/$chatId/ler');
 
       if (response.data['success'] == true) {
         return response.data['data']['lidas'] ?? 0;
@@ -176,10 +182,9 @@ class ChatRepository extends BaseRepository {
   }
 
   // ================================================================
-  // 🔥 NOVOS MÉTODOS PARA LOJISTA (corrigidos e com /api)
+  // 🔥 NOVOS MÉTODOS PARA LOJISTA (Padrão QuiGestor)
   // ================================================================
 
-  /// Obtém o ID do chat associado a um pedido específico (ou cria se não existir)
   Future<int> getChatIdByPedido(int pedidoId) async {
     try {
       final response = await dio.get(
@@ -196,13 +201,40 @@ class ChatRepository extends BaseRepository {
     }
   }
 
-  Future<List<ChatModel>> getChatsLojista() async {
+  Future<ChatResponse> getChatsLojista({
+    int page = 1,
+    int perPage = 20,
+    Map<String, dynamic> filters = const {},
+  }) async {
     try {
-      final response = await dio.get('/api/lojista/chats'); // ✅ /api
+      final params = {
+        'page': page,
+        'per_page': perPage,
+        ...filters,
+      };
+      
+      // 🔥 Log da URL completa para depuração
+      final baseUrl = dio.options.baseUrl;
+      final queryString = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+      debugPrint('🔗 [ChatRepository] URL final: $baseUrl/api/lojista/chats?$queryString');
+      
+      final response = await dio.get('/api/lojista/chats', queryParameters: params);
 
       if (response.data['success'] == true) {
-        final chatList = response.data['data'] as List;
-        return chatList.map((item) => ChatModel.fromJson(item)).toList();
+        final data = response.data['data'];
+        final items = (data['items'] as List?)
+                ?.map((e) => ChatItem.fromJson(e))
+                .toList() ??
+            [];
+        final pagination = data['pagination'];
+        final filterOptions = data['filter_options'] as Map<String, dynamic>?;
+        final filterGroups = _parseFilterGroups(filterOptions);
+
+        return ChatResponse(
+          items: items,
+          pagination: Pagination.fromJson(pagination),
+          filterGroups: filterGroups,
+        );
       }
 
       throw Exception(response.data['message'] ?? 'Erro ao carregar chats');
@@ -211,24 +243,16 @@ class ChatRepository extends BaseRepository {
     }
   }
 
-  Future<List<ChatModel>> getChatsLojistaComNaoLidas() async {
-    try {
-      final response = await dio.get('/api/lojista/chats/com-nao-lidas'); // ✅ /api
-
-      if (response.data['success'] == true) {
-        final chatList = response.data['data'] as List;
-        return chatList.map((item) => ChatModel.fromJson(item)).toList();
-      }
-
-      throw Exception(response.data['message'] ?? 'Erro ao carregar chats com não lidas');
-    } catch (e) {
-      throw handleError(e);
-    }
+  List<FilterGroup>? _parseFilterGroups(Map<String, dynamic>? filterOptions) {
+    if (filterOptions == null) return null;
+    return filterOptions.entries.map((entry) {
+      return FilterGroup.fromJson(entry.key, entry.value);
+    }).toList();
   }
 
   Future<int> contarNaoLidasLojista() async {
     try {
-      final response = await dio.get('/api/lojista/chats/nao-lidas'); // ✅ /api
+      final response = await dio.get('/api/lojista/chats/nao-lidas');
 
       if (response.data['success'] == true) {
         return response.data['data']['total_nao_lidas'] ?? 0;
@@ -241,10 +265,12 @@ class ChatRepository extends BaseRepository {
 
   Future<List<ChatMensagemModel>> getMensagensLojista(int chatId) async {
     try {
-      final response = await dio.get('/api/lojista/chats/$chatId/mensagens'); // ✅ /api
+      debugPrint('📡 [ChatRepository] getMensagensLojista: /api/lojista/chats/$chatId/mensagens');
+      final response = await dio.get('/api/lojista/chats/$chatId/mensagens');
 
       if (response.data['success'] == true) {
         final data = response.data['data'] as List;
+        debugPrint('📥 [ChatRepository] getMensagensLojista retornou ${data.length} mensagens');
         return data.map((item) => ChatMensagemModel.fromJson(item)).toList();
       }
 
@@ -257,7 +283,7 @@ class ChatRepository extends BaseRepository {
   Future<ChatMensagemModel> enviarMensagemLojista(int chatId, Map<String, dynamic> data) async {
     try {
       final response = await dio.post(
-        '/api/lojista/chats/$chatId/mensagem', // ✅ /api
+        '/api/lojista/chats/$chatId/mensagem',
         data: data,
       );
 
@@ -273,7 +299,7 @@ class ChatRepository extends BaseRepository {
 
   Future<int> marcarMensagensComoLidasLojista(int chatId) async {
     try {
-      final response = await dio.put('/api/lojista/chats/$chatId/ler'); // ✅ /api
+      final response = await dio.put('/api/lojista/chats/$chatId/ler');
 
       if (response.data['success'] == true) {
         return response.data['data']['lidas'] ?? 0;
@@ -287,7 +313,7 @@ class ChatRepository extends BaseRepository {
   Future<ChatModel> atualizarStatusChatLojista(int chatId, String status) async {
     try {
       final response = await dio.put(
-        '/api/lojista/chats/$chatId/status', // ✅ /api
+        '/api/lojista/chats/$chatId/status',
         data: {'status': status},
       );
 
@@ -300,6 +326,39 @@ class ChatRepository extends BaseRepository {
       throw handleError(e);
     }
   }
+}
 
+class ChatResponse {
+  final List<ChatItem> items;
+  final Pagination pagination;
+  final List<FilterGroup>? filterGroups;
 
+  ChatResponse({
+    required this.items,
+    required this.pagination,
+    this.filterGroups,
+  });
+}
+
+class Pagination {
+  final int total;
+  final int page;
+  final int perPage;
+  final int totalPages;
+
+  Pagination({
+    required this.total,
+    required this.page,
+    required this.perPage,
+    required this.totalPages,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    return Pagination(
+      total: json['total'] ?? 0,
+      page: json['page'] ?? 1,
+      perPage: json['per_page'] ?? 20,
+      totalPages: json['total_pages'] ?? 0,
+    );
+  }
 }

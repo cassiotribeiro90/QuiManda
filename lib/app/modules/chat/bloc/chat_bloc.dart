@@ -1,297 +1,139 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:collection/collection.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../core/api_client.dart';
+import '../../../models/chat_item.dart';
+import '../../../models/filter_option.dart';
 import '../models/chat_mensagem_model.dart';
 import '../models/chat_model.dart';
 import '../repositories/chat_repository.dart';
+import 'chat_badge_cubit.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';
 
-/// 🔥 BLoC para gerenciamento de Chat
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ChatRepository _repository = ChatRepository(GetIt.I<ApiClient>());
-  
-  // 🔥 MAPA PARA ARMAZENAR MENSAGENS POR CHAT ID (Cache persistente durante a sessão)
   static final Map<int, List<ChatMensagemModel>> _mensagensCache = {};
 
-  ChatBloc() : super(ChatInitial()) {
-    // ================================================================
-    // 🔥 CLIENTE
-    // ================================================================
-
-    on<CarregarChats>(_onCarregarChats);
-    on<IniciarChatComLoja>(_onIniciarChatComLoja);
-    on<CarregarMensagens>(_onCarregarMensagens);
-    on<CriarChat>(_onCriarChat);
-    on<EnviarMensagem>(_onEnviarMensagem);
-    on<MarcarMensagensComoLidas>(_onMarcarMensagensComoLidas);
-    on<ArquivarChat>(_onArquivarChat);
-    on<ContarNaoLidas>(_onContarNaoLidas);
-
-    // ================================================================
-    // 🔥 LOJISTA
-    // ================================================================
-
-    on<CarregarChatsLojista>(_onCarregarChatsLojista);
-    on<CarregarChatsLojistaComNaoLidas>(_onCarregarChatsLojistaComNaoLidas);
+  ChatBloc() : super(ChatState.initial()) {
+    // 🔥 Lojista (Padrão QuiGestor)
+    on<ChatLoadChats>(_onLoadChats);
+    on<ChatLoadMore>(_onLoadMore);
+    on<ChatRefresh>(_onRefresh);
+    on<ChatFiltersApplied>(_onFiltersApplied);
+    on<ChatUpdateNaoLidas>(_onUpdateNaoLidas);
+    
+    // 🔥 Sincronização e Legado
+    on<NovaMensagemRecebida>(_onNovaMensagemRecebida);
+    on<LimparChat>(_onLimparChat);
     on<CarregarMensagensLojista>(_onCarregarMensagensLojista);
     on<EnviarMensagemLojista>(_onEnviarMensagemLojista);
     on<MarcarMensagensComoLidasLojista>(_onMarcarMensagensComoLidasLojista);
-    on<AtualizarStatusChat>(_onAtualizarStatusChat);
-    on<ContarNaoLidasLojista>(_onContarNaoLidasLojista);
-
-    // ================================================================
-    // 🔥 SINCRONIZAÇÃO
-    // ================================================================
-
-    on<NovaMensagemRecebida>(_onNovaMensagemRecebida);
-    on<LimparChat>(_onLimparChat);
   }
 
-  // ================================================================
-  // 🔥 HANDLERS - CLIENTE
-  // ================================================================
+  Future<void> _onLoadChats(ChatLoadChats event, Emitter<ChatState> emit) async {
+    // 🔥 Evita recarregar se já estiver carregando (proteção extra)
+    if (state.isLoading && !event.reset) return;
 
-  /// Carregar chats do cliente
-  Future<void> _onCarregarChats(
-    CarregarChats event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-    try {
-      final chats = await _repository.getMeusChats();
-      final totalNaoLidas = await _repository.contarNaoLidas();
-      emit(ChatLoaded(chats: chats, totalNaoLidas: totalNaoLidas));
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao carregar chats: $e'));
+    if (event.reset) {
+      emit(state.copyWith(
+        items: [],
+        page: 1,
+        hasMore: true,
+        hasLoaded: false,
+        isLoading: true,
+        clearError: true,
+      ));
+    } else if (!state.hasLoaded) {
+      emit(state.copyWith(isLoading: true));
     }
-  }
 
-  /// Iniciar chat com a loja
-  Future<void> _onIniciarChatComLoja(
-    IniciarChatComLoja event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
     try {
-      final result = await _repository.iniciarChatComLoja(
-        lojaId: event.lojaId,
-        pedidoId: event.pedidoId,
-        mensagemInicial: event.mensagemInicial,
+      final response = await _repository.getChatsLojista(
+        page: state.page,
+        perPage: 20,
+        filters: state.currentFilters,
       );
 
-      final chat = result['chat'] as ChatModel;
-      final mensagens = result['mensagens'] as List<ChatMensagemModel>;
+      final updatedItems = event.reset ? response.items : [...state.items, ...response.items];
 
-      // 🔥 ATUALIZA O CACHE COM AS MENSAGENS RECEBIDAS
-      _mensagensCache[chat.id] = mensagens;
-
-      // 🔥 EMITE O ESTADO DE PRONTO COM MENSAGENS CARREGADAS
-      emit(ChatReady(
-        chat: chat,
-        mensagens: mensagens,
+      emit(state.copyWith(
+        items: updatedItems,
+        total: response.pagination.total,
+        page: response.pagination.page + 1,
+        hasMore: updatedItems.length < response.pagination.total,
+        hasLoaded: true,
+        isLoading: false,
+        isLoadingMore: false,
+        filterGroups: response.filterGroups ?? state.filterGroups,
+        clearError: true,
       ));
-
-      add(CarregarChats());
     } catch (e) {
-      emit(ChatError(message: 'Erro ao iniciar chat: $e'));
+      emit(state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+        isLoadingMore: false,
+      ));
     }
   }
 
-  /// Carregar mensagens de um chat
-  Future<void> _onCarregarMensagens(
-    CarregarMensagens event,
-    Emitter<ChatState> emit,
-  ) async {
-    // 🔥 SE JÁ TIVER MENSAGENS EM CACHE, USA ELAS IMEDIATAMENTE PARA EVITAR FLICKER
+  void _onLoadMore(ChatLoadMore event, Emitter<ChatState> emit) {
+    if (state.hasMore && !state.isLoadingMore && state.hasLoaded) {
+      emit(state.copyWith(isLoadingMore: true));
+      add(const ChatLoadChats(reset: false));
+    }
+  }
+
+  Future<void> _onRefresh(ChatRefresh event, Emitter<ChatState> emit) async {
+    add(const ChatLoadChats(reset: true));
+  }
+
+  void _onFiltersApplied(ChatFiltersApplied event, Emitter<ChatState> emit) {
+    // 🔥 Evita recarregar se os filtros forem exatamente iguais
+    if (const MapEquality().equals(event.params, state.currentFilters)) {
+      return;
+    }
+
+    emit(state.copyWith(
+      currentFilters: event.params,
+      items: [],
+      page: 1,
+      hasMore: true,
+      hasLoaded: false,
+      isLoading: true,
+      clearError: true,
+    ));
+    add(const ChatLoadChats(reset: true));
+  }
+
+  Future<void> _onUpdateNaoLidas(ChatUpdateNaoLidas event, Emitter<ChatState> emit) async {
+    try {
+      final total = await _repository.contarNaoLidasLojista();
+      GetIt.I<ChatBadgeCubit>().setBadge(total);
+    } catch (_) {}
+  }
+
+  Future<void> _onCarregarMensagensLojista(CarregarMensagensLojista event, Emitter<ChatState> emit) async {
     if (_mensagensCache.containsKey(event.chatId)) {
-      emit(ChatMessagesLoaded(
-        mensagens: _mensagensCache[event.chatId]!,
-        chatId: event.chatId,
-      ));
+      emit(state.copyWith(mensagensAtuais: _mensagensCache[event.chatId], chatIdAtivo: event.chatId));
     } else {
-      emit(ChatLoading());
-    }
-
-    try {
-      final mensagens = await _repository.getMensagens(event.chatId);
-      _mensagensCache[event.chatId] = mensagens; // 🔥 ATUALIZA O CACHE
-      emit(ChatMessagesLoaded(
-        mensagens: mensagens,
-        chatId: event.chatId,
-      ));
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao carregar mensagens: $e'));
-    }
-  }
-
-  /// Criar um novo chat
-  Future<void> _onCriarChat(
-    CriarChat event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-    try {
-      final chat = await _repository.criarChat(event.data);
-      emit(ChatCreated(chat: chat));
-      add(CarregarChats());
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao criar chat: $e'));
-    }
-  }
-
-  /// Enviar mensagem
-  Future<void> _onEnviarMensagem(
-    EnviarMensagem event,
-    Emitter<ChatState> emit,
-  ) async {
-    try {
-      final mensagem = await _repository.enviarMensagem(
-        event.chatId,
-        {
-          'mensagem': event.mensagem,
-          'tipo': event.tipo,
-          'anexo_url': event.anexoUrl,
-          'pedido_id': event.pedidoId,
-        },
-      );
-
-      // 🔥 ATUALIZA O CACHE LOCAL IMEDIATAMENTE
-      if (_mensagensCache.containsKey(event.chatId)) {
-        _mensagensCache[event.chatId]!.add(mensagem);
-      } else {
-        _mensagensCache[event.chatId] = [mensagem];
-      }
-
-      emit(ChatMessageSent(mensagem: mensagem));
-      
-      // 🔥 RE-EMITE O ESTADO LOADED COM O CACHE ATUALIZADO
-      emit(ChatMessagesLoaded(
-        mensagens: _mensagensCache[event.chatId]!,
-        chatId: event.chatId,
-      ));
-
-      add(CarregarChats());
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao enviar mensagem: $e'));
-    }
-  }
-
-  /// Marcar mensagens como lidas
-  Future<void> _onMarcarMensagensComoLidas(
-    MarcarMensagensComoLidas event,
-    Emitter<ChatState> emit,
-  ) async {
-    try {
-      final count = await _repository.marcarMensagensComoLidas(event.chatId);
-      emit(ChatMessagesMarkedAsRead(count));
-      
-      // 🔥 RE-EMITE O ESTADO LOADED PARA MANTER AS MENSAGENS NA TELA
-      if (_mensagensCache.containsKey(event.chatId)) {
-        emit(ChatMessagesLoaded(
-          mensagens: _mensagensCache[event.chatId]!,
-          chatId: event.chatId,
-        ));
-      }
-      
-      add(CarregarChats());
-    } catch (e) {
-      print('Erro ao marcar mensagens como lidas: $e');
-    }
-  }
-
-  /// Arquivar chat
-  Future<void> _onArquivarChat(
-    ArquivarChat event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-    try {
-      await _repository.arquivarChat(event.chatId);
-      emit(ChatArchived(event.chatId));
-      add(CarregarChats());
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao arquivar chat: $e'));
-    }
-  }
-
-  /// Contar mensagens não lidas
-  Future<void> _onContarNaoLidas(
-    ContarNaoLidas event,
-    Emitter<ChatState> emit,
-  ) async {
-    try {
-      final total = await _repository.contarNaoLidas();
-      emit(ChatNaoLidasLoaded(total));
-    } catch (e) {
-      emit(ChatNaoLidasLoaded(0));
-    }
-  }
-
-  // ================================================================
-  // 🔥 HANDLERS - LOJISTA
-  // ================================================================
-
-  Future<void> _onCarregarChatsLojista(
-    CarregarChatsLojista event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-    try {
-      final chats = await _repository.getChatsLojista();
-      final totalNaoLidas = await _repository.contarNaoLidasLojista();
-      emit(ChatLojistaLoaded(chats: chats, totalNaoLidas: totalNaoLidas));
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao carregar chats: $e'));
-    }
-  }
-
-  Future<void> _onCarregarChatsLojistaComNaoLidas(
-    CarregarChatsLojistaComNaoLidas event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-    try {
-      final chats = await _repository.getChatsLojistaComNaoLidas();
-      emit(ChatLojistaLoaded(chats: chats, totalNaoLidas: chats.length));
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao carregar chats: $e'));
-    }
-  }
-
-  Future<void> _onCarregarMensagensLojista(
-    CarregarMensagensLojista event,
-    Emitter<ChatState> emit,
-  ) async {
-    if (_mensagensCache.containsKey(event.chatId)) {
-      emit(ChatMessagesLoaded(
-        mensagens: _mensagensCache[event.chatId]!,
-        chatId: event.chatId,
-      ));
-    } else {
-      emit(ChatLoading());
+      emit(state.copyWith(isLoading: true));
     }
 
     try {
       final mensagens = await _repository.getMensagensLojista(event.chatId);
       _mensagensCache[event.chatId] = mensagens;
-      emit(ChatMessagesLoaded(
-        mensagens: mensagens,
-        chatId: event.chatId,
-      ));
+      emit(state.copyWith(mensagensAtuais: mensagens, chatIdAtivo: event.chatId, isLoading: false));
     } catch (e) {
-      emit(ChatError(message: 'Erro ao carregar mensagens: $e'));
+      emit(state.copyWith(error: e.toString(), isLoading: false));
     }
   }
 
-  Future<void> _onEnviarMensagemLojista(
-    EnviarMensagemLojista event,
-    Emitter<ChatState> emit,
-  ) async {
+  Future<void> _onEnviarMensagemLojista(EnviarMensagemLojista event, Emitter<ChatState> emit) async {
     try {
       final mensagem = await _repository.enviarMensagemLojista(
         event.chatId,
@@ -309,113 +151,46 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         _mensagensCache[event.chatId] = [mensagem];
       }
 
-      emit(ChatMessageSent(mensagem: mensagem));
-      emit(ChatMessagesLoaded(
-        mensagens: _mensagensCache[event.chatId]!,
-        chatId: event.chatId,
+      emit(state.copyWith(
+        mensagensAtuais: List.from(_mensagensCache[event.chatId]!),
+        mensagemEnviada: mensagem,
       ));
 
-      add(CarregarChatsLojista());
+      add(const ChatLoadChats(reset: true));
     } catch (e) {
-      emit(ChatError(message: 'Erro ao enviar mensagem: $e'));
+      emit(state.copyWith(error: e.toString()));
     }
   }
 
-  Future<void> _onMarcarMensagensComoLidasLojista(
-    MarcarMensagensComoLidasLojista event,
-    Emitter<ChatState> emit,
-  ) async {
+  Future<void> _onMarcarMensagensComoLidasLojista(MarcarMensagensComoLidasLojista event, Emitter<ChatState> emit) async {
     try {
-      final count = await _repository.marcarMensagensComoLidasLojista(event.chatId);
-      emit(ChatMessagesMarkedAsRead(count));
-      
-      if (_mensagensCache.containsKey(event.chatId)) {
-        emit(ChatMessagesLoaded(
-          mensagens: _mensagensCache[event.chatId]!,
-          chatId: event.chatId,
-        ));
+      await _repository.marcarMensagensComoLidasLojista(event.chatId);
+      add(const ChatUpdateNaoLidas());
+      add(const ChatLoadChats(reset: true));
+    } catch (_) {}
+  }
+
+  Future<void> _onNovaMensagemRecebida(NovaMensagemRecebida event, Emitter<ChatState> emit) async {
+    if (state.chatIdAtivo == event.mensagem.chatId) {
+      if (_mensagensCache.containsKey(event.mensagem.chatId)) {
+        _mensagensCache[event.mensagem.chatId]!.add(event.mensagem);
+      } else {
+        _mensagensCache[event.mensagem.chatId] = [event.mensagem];
       }
-      
-      add(CarregarChatsLojista());
-    } catch (e) {
-      print('Erro ao marcar mensagens como lidas: $e');
-    }
-  }
-
-  Future<void> _onAtualizarStatusChat(
-    AtualizarStatusChat event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-    try {
-      final chat = await _repository.atualizarStatusChatLojista(
-        event.chatId,
-        event.status,
-      );
-      emit(ChatStatusUpdated(chat: chat));
-      add(CarregarChatsLojista());
-    } catch (e) {
-      emit(ChatError(message: 'Erro ao atualizar status do chat: $e'));
-    }
-  }
-
-  Future<void> _onContarNaoLidasLojista(
-    ContarNaoLidasLojista event,
-    Emitter<ChatState> emit,
-  ) async {
-    try {
-      final total = await _repository.contarNaoLidasLojista();
-      emit(ChatNaoLidasLoaded(total));
-    } catch (e) {
-      emit(ChatNaoLidasLoaded(0));
-    }
-  }
-
-  // ================================================================
-  // 🔥 SINCRONIZAÇÃO
-  // ================================================================
-
-  Future<void> _onNovaMensagemRecebida(
-    NovaMensagemRecebida event,
-    Emitter<ChatState> emit,
-  ) async {
-    // Se estiver na tela de mensagens, adiciona à lista e ao cache
-    if (state is ChatMessagesLoaded) {
-      final currentState = state as ChatMessagesLoaded;
-      if (currentState.chatId == event.mensagem.chatId) {
-        final novasMensagens = [...currentState.mensagens, event.mensagem];
-        _mensagensCache[event.mensagem.chatId] = novasMensagens; // 🔥 UPDATE CACHE
-        emit(ChatMessagesLoaded(
-          mensagens: novasMensagens,
-          chatId: currentState.chatId,
-          hasMore: currentState.hasMore,
-        ));
-      }
+      emit(state.copyWith(mensagensAtuais: List.from(_mensagensCache[event.mensagem.chatId]!)));
     } else {
-       // Se não estiver com o chat aberto mas o cache existir, atualiza ele silenciosamente
-       if (_mensagensCache.containsKey(event.mensagem.chatId)) {
-         _mensagensCache[event.mensagem.chatId]!.add(event.mensagem);
-       }
+      if (_mensagensCache.containsKey(event.mensagem.chatId)) {
+        _mensagensCache[event.mensagem.chatId]!.add(event.mensagem);
+      }
     }
-
-    if (state is ChatLoaded) {
-      add(CarregarChats());
-    }
-    if (state is ChatLojistaLoaded) {
-      add(CarregarChatsLojista());
-    }
-
-    emit(ChatNovaMensagem(event.mensagem));
+    add(const ChatUpdateNaoLidas());
+    add(const ChatLoadChats(reset: true));
   }
 
-  void _onLimparChat(
-    LimparChat event,
-    Emitter<ChatState> emit,
-  ) {
-    emit(ChatInitial());
+  void _onLimparChat(LimparChat event, Emitter<ChatState> emit) {
+    emit(ChatState.initial());
   }
 
-  // 🔥 METODO PARA LIMPAR CACHE (QUANDO SAIR DA TELA)
   static void limparCache(int chatId) {
     _mensagensCache.remove(chatId);
   }

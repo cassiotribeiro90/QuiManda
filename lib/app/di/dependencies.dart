@@ -24,6 +24,8 @@ import '../modules/home/cubit/home_cubit.dart';
 import '../modules/onboarding/bloc/onboarding_cubit.dart';
 import '../modules/configuracoes/services/loja_service.dart' as config_service;
 import '../modules/configuracoes/bloc/configuracoes_cubit.dart';
+import '../modules/chat/repositories/chat_repository.dart';
+import '../modules/chat/bloc/chat_badge_cubit.dart';
 
 import '../core/storage/store_storage.dart';
 import '../modules/store/bloc/store_cubit.dart';
@@ -109,4 +111,8 @@ Future<void> setupDependencies() async {
   // Configuracoes
   getIt.registerLazySingleton<config_service.LojaService>(() => config_service.LojaService(getIt<ApiClient>()));
   getIt.registerFactory<ConfiguracoesCubit>(() => ConfiguracoesCubit(getIt<config_service.LojaService>()));
+
+  // Chat
+  getIt.registerLazySingleton<ChatRepository>(() => ChatRepository(getIt<ApiClient>()));
+  getIt.registerLazySingleton<ChatBadgeCubit>(() => ChatBadgeCubit(getIt<ChatRepository>()));
 }

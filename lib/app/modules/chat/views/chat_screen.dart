@@ -7,12 +7,14 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/chat_input.dart';
 import '../../../shared/widgets/chat_message_bubble.dart';
 import '../../../shared/widgets/chat_message_skeleton.dart';
+import '../bloc/chat_badge_cubit.dart';
 import '../models/chat_mensagem_model.dart';
 import '../models/chat_model.dart';
 import '../repositories/chat_repository.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatModel? chat;
+  final int? chatId; // 🔥 Novo campo
   final int? lojaId;
   final int? pedidoId;
   final String? mensagemInicial;
@@ -21,6 +23,7 @@ class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
     this.chat,
+    this.chatId, // 🔥 Novo campo
     this.lojaId,
     this.pedidoId,
     this.mensagemInicial,
@@ -78,13 +81,13 @@ class _ChatScreenState extends State<ChatScreen> {
   // ================================================================
 
   Future<void> _carregarDados() async {
-    // Se não temos pedidoId nem lojaId, não há como carregar
-    if (widget.pedidoId == null && widget.lojaId == null && widget.chat == null) {
+    // Se não temos pedidoId nem lojaId nem chatId, não há como carregar
+    if (widget.pedidoId == null && widget.lojaId == null && widget.chat == null && widget.chatId == null) {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _hasError = true;
-          _errorMessage = 'Nenhum pedido ou loja informado para iniciar o chat.';
+          _errorMessage = 'Nenhum identificador informado para iniciar o chat.';
         });
       }
       return;
@@ -94,8 +97,13 @@ class _ChatScreenState extends State<ChatScreen> {
       int? chatId;
       ChatModel? chatModel;
 
+      // 🔥 CASO 0: JÁ TEMOS O ID DIRETAMENTE
+      if (widget.chatId != null) {
+        chatId = widget.chatId;
+        chatModel = await _repository.getChat(chatId!);
+      }
       // 🔥 CASO 1: JÁ TEMOS UM CHAT (pode ter vindo do widget)
-      if (widget.chat != null) {
+      else if (widget.chat != null) {
         chatModel = widget.chat;
         chatId = chatModel!.id;
       }
@@ -121,7 +129,9 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       // 🔥 CARREGA MENSAGENS (usando metodo do lojista)
+      debugPrint('💬 [ChatScreen] Solicitando mensagens para chatId: $chatId');
       final mensagens = await _repository.getMensagensLojista(chatId);
+      debugPrint('💬 [ChatScreen] Mensagens recebidas da API: ${mensagens.length}');
 
       if (mounted) {
         setState(() {
@@ -130,9 +140,14 @@ class _ChatScreenState extends State<ChatScreen> {
           _isLoading = false;
           _isFirstLoad = false;
         });
+        debugPrint('💬 [ChatScreen] Estado atualizado com ${_mensagens.length} mensagens');
 
         // 🔥 MARCA COMO LIDAS EM BACKGROUND (metodo do lojista)
-        _repository.marcarMensagensComoLidasLojista(chatId);
+        _repository.marcarMensagensComoLidasLojista(chatId).then((_) {
+          if (mounted) {
+             GetIt.I<ChatBadgeCubit>().updateBadge();
+          }
+        });
 
         _startAutoRefresh();
         _scrollToBottom();
@@ -280,6 +295,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // ================================================================
 
   Widget _buildBody() {
+    debugPrint('🎨 [ChatScreen] Construindo corpo com ${_mensagens.length} mensagens. isLoading: $_isLoading');
     // 🔥 ERRO
     if (_hasError) {
       return Center(
