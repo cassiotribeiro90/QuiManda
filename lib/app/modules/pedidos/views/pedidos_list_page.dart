@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../cubit/pedidos_cubit.dart';
 import '../cubit/pedidos_state.dart';
 import '../model/pedido_model.dart';
 import '../widgets/pedido_status_section.dart';
 import '../widgets/pedido_empty_widget.dart';
 import '../widgets/status_badge_widget.dart';
+import '../widgets/chat_card_widget.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 
 import '../../home/views/home_view.dart';
@@ -128,13 +130,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
         )
             : null,
         actions: [
-          // 🔥 INDICADOR DE LOOP
+          // 🔥 INDICADOR DE LOOP TTS (NOVO)
           BlocBuilder<PedidosCubit, PedidosState>(
             builder: (context, state) {
-              final isLooping = context.read<PedidosCubit>().isTtsLooping;
-              final pendingCount = context.read<PedidosCubit>().pendingAlertsCount;
-
-              if (isLooping && pendingCount > 0) {
+              if (state is PedidosLoaded && state.isTtsLooping && state.pendingAlertsCount > 0) {
                 return Container(
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -155,7 +154,7 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '$pendingCount',
+                        '${state.pendingAlertsCount}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -172,7 +171,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
           // 🔥 Botão Mudo
           BlocBuilder<PedidosCubit, PedidosState>(
             builder: (context, state) {
-              final isMuted = context.read<PedidosCubit>().isTtsMuted;
+              final bool isMuted = state is PedidosLoaded 
+                  ? state.isTtsMuted 
+                  : context.read<PedidosCubit>().isTtsMuted;
+
               return IconButton(
                 icon: Icon(
                   isMuted ? Icons.volume_off : Icons.volume_up,
@@ -271,7 +273,14 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
           }
 
           if (state is PedidosLoaded) {
-            if (state.totalPedidos == 0) {
+            final chatCards = state.chatsNaoLidos
+                .map((chat) => ChatCardWidget(
+                      chat: chat,
+                      onTap: () => _abrirChatGenerico(context, chat.chatId),
+                    ))
+                .toList();
+
+            if (state.totalPedidos == 0 && state.chatsNaoLidos.isEmpty) {
               return RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: const SingleChildScrollView(
@@ -287,19 +296,22 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 20),
-                children: state.grupos.map((grupo) => PedidoStatusSection(
-                  key: ValueKey('section_${grupo.status}'),
-                  status: grupo.status,
-                  label: grupo.label,
-                  total: grupo.total,
-                  pedidos: grupo.itens,
-                  updatingPedidoId: state.updatingPedidoId,
-                  onAceitar: (id) => context.read<PedidosCubit>().aceitarPedido(id),
-                  onRecusar: (id) => _mostrarMotivoRecusa(context, id),
-                  onAtualizarStatus: (id, novoStatus) =>
-                      context.read<PedidosCubit>().atualizarStatus(id, novoStatus),
-                  onCardTap: (pedido) => _abrirDetalhes(context, pedido),
-                )).toList(),
+                children: [
+                  ...chatCards,
+                  ...state.grupos.map((grupo) => PedidoStatusSection(
+                        key: ValueKey('section_${grupo.status}'),
+                        status: grupo.status,
+                        label: grupo.label,
+                        total: grupo.total,
+                        pedidos: grupo.itens,
+                        updatingPedidoId: state.updatingPedidoId,
+                        onAceitar: (id) => context.read<PedidosCubit>().aceitarPedido(id),
+                        onRecusar: (id) => _mostrarMotivoRecusa(context, id),
+                        onAtualizarStatus: (id, novoStatus) =>
+                            context.read<PedidosCubit>().atualizarStatus(id, novoStatus),
+                        onCardTap: (pedido) => _abrirDetalhes(context, pedido),
+                      )),
+                ],
               ),
             );
           }
@@ -307,6 +319,16 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
           return const SizedBox.shrink();
         },
       ),
+    );
+  }
+
+  void _abrirChatGenerico(BuildContext context, int chatId) {
+    debugPrint('💬 [NAVIGATION] Abrindo chat genérico ID: $chatId');
+    
+    // 🔥 Usando GoRouter via context.pushNamed para compatibilidade com as rotas definidas
+    GoRouter.of(context).pushNamed(
+      'chat-detalhe',
+      extra: {'chatId': chatId, 'isGeneric': true},
     );
   }
 

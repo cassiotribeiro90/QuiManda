@@ -18,6 +18,7 @@ class TtsService {
   final List<int> _pendingIds = [];
   final Map<int, String> _alerts = {};
   int _currentIndex = 0;
+  int _nextManualId = -1; // 🔥 Controle para IDs únicos de falas avulsas
   bool _isLooping = false;
   Timer? _loopTimer;
   bool _isSpeaking = false;
@@ -45,8 +46,19 @@ class TtsService {
 
   /// 🔥 Substitui toda a fila pelos pedidos novos
   void syncAlerts(List<int> novosIds, List<AlertItem> novosAlertas) {
+    // 🔥 PRESERVA ALERTAS MANUAIS (NEGATIVOS)
+    final List<int> manualIds = _pendingIds.where((id) => id < 0).toList();
+    final Map<int, String> manualAlerts = {
+      for (var id in manualIds) id: _alerts[id]!
+    };
+
     _pendingIds.clear();
     _alerts.clear();
+
+    // 🔥 READICIONA ALERTAS MANUAIS
+    _pendingIds.addAll(manualIds);
+    _alerts.addAll(manualAlerts);
+
     for (final item in novosAlertas) {
       if (!_alerts.containsKey(item.pedidoId)) {
         _pendingIds.add(item.pedidoId);
@@ -91,9 +103,10 @@ class TtsService {
       return;
     }
 
-    // Se está ocupado, adiciona como alerta temporário (ID 0)
-    _pendingIds.add(0);
-    _alerts[0] = text;
+    // 🔥 ADICIONA COMO ALERTA TEMPORÁRIO COM ID ÚNICO NEGATIVO
+    final id = _nextManualId--;
+    _pendingIds.add(id);
+    _alerts[id] = text;
     if (!_isLooping) _startLoop();
   }
 
@@ -131,7 +144,16 @@ class TtsService {
     _isSpeaking = true;
     _impl!.speak(text).then((_) {
       _isSpeaking = false;
-      _currentIndex = (_currentIndex + 1) % _pendingIds.length;
+
+      // 🔥 SE FOR UM ALERTA MANUAL (NEGATIVO), REMOVE DA FILA APÓS FALAR
+      if (id < 0) {
+        _pendingIds.remove(id);
+        _alerts.remove(id);
+        // Não incrementamos _currentIndex pois o item foi removido
+      } else {
+        _currentIndex = (_currentIndex + 1) % _pendingIds.length;
+      }
+
       _loopTimer = Timer(const Duration(seconds: 2), () {
         if (_pendingIds.isNotEmpty && !_isMuted) {
           if (kIsWeb) onUserInteraction();
@@ -142,7 +164,12 @@ class TtsService {
       });
     }).catchError((_) {
       _isSpeaking = false;
-      _currentIndex = (_currentIndex + 1) % _pendingIds.length;
+      if (id < 0) {
+        _pendingIds.remove(id);
+        _alerts.remove(id);
+      } else {
+        _currentIndex = (_currentIndex + 1) % _pendingIds.length;
+      }
       _loopTimer = Timer(const Duration(seconds: 2), () => _processLoop());
     });
   }
