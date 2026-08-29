@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../navigation/navigation_cubit.dart';
-import '../../home/views/home_view.dart';
 import '../bloc/cardapio_cubit.dart';
 import '../bloc/cardapio_state.dart';
 import '../models/produto_model.dart';
 import 'widgets/produto_card.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class CardapioPage extends StatelessWidget {
   const CardapioPage({super.key});
@@ -40,17 +40,8 @@ class _CardapioListViewState extends State<CardapioListView> {
     
     return ResponsiveScaffold(
       maxWidth: 1000,
-      appBar: AppBar(
-        title: const Text('Meu Cardápio'),
-        leading: MediaQuery.of(context).size.width < 900
-            ? IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  debugPrint('📱 [UI] Abrindo drawer lateral');
-                  HomeView.scaffoldKey.currentState?.openDrawer();
-                },
-              )
-            : null,
+      appBar: CustomAppBar(
+        title: 'Meu Cardápio',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

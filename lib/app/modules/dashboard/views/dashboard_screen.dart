@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
-import '../../home/views/home_view.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../cubit/dashboard_state.dart';
 import 'widgets/dashboard_kpis.dart';
 import 'widgets/dashboard_charts.dart';
 import 'widgets/dashboard_lists.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -83,17 +83,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return ResponsiveScaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        leading: MediaQuery.of(context).size.width < 900
-            ? IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-        )
-            : null,
+      appBar: const CustomAppBar(
+        title: 'Dashboard',
       ),
       body: RefreshIndicator(
         onRefresh: () async {

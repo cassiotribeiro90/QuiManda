@@ -4,6 +4,7 @@ import '../bloc/store_cubit.dart';
 import '../bloc/store_state.dart';
 import '../../../navigation/navigation_cubit.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class StoreSelectionPage extends StatefulWidget {
   const StoreSelectionPage({super.key});
@@ -29,15 +30,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     final nav = context.read<NavigationCubit>();
     return ResponsiveScaffold(
       maxWidth: 800,
-      appBar: AppBar(
-        title: const Text(
-          'Selecione a Loja',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: CustomAppBar(
+        title: 'Selecione a Loja',
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () {

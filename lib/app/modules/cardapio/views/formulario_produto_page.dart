@@ -11,6 +11,7 @@ import '../models/subcategoria.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../auth/cubit/auth_state.dart';
 import '../../../navigation/navigation_cubit.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class FormularioProdutoPage extends StatefulWidget {
   final ProdutoModel? produto;
@@ -191,9 +192,10 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
 
         return ResponsiveScaffold(
           maxWidth: 900,
-          appBar: AppBar(
-            title: Text(_isEditing ? 'Editar Produto' : 'Novo Produto'),
+          appBar: CustomAppBar(
+            title: _isEditing ? 'Editar Produto' : 'Novo Produto',
             leading: BackButton(
+              color: Colors.white,
               onPressed: () {
                 debugPrint('⬅️ [NAVIGATION] Voltando do formulário de produto');
                 context.read<NavigationCubit>().pop();

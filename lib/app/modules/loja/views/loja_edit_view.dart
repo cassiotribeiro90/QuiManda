@@ -4,6 +4,7 @@ import '../cubit/loja_cubit.dart';
 import '../cubit/loja_state.dart';
 import '../model/loja_model.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 import '../../home/views/home_view.dart';
 
@@ -30,19 +31,8 @@ class _LojaEditViewState extends State<LojaEditView> {
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
-      appBar: AppBar(
-        title: const Text('Loja'),
-        leading: LayoutBuilder(
-          builder: (context, constraints) {
-            if (MediaQuery.of(context).size.width < 900) {
-              return IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+      appBar: const CustomAppBar(
+        title: 'Loja',
       ),
       body: BlocConsumer<LojaCubit, LojaState>(
         listener: (context, state) {

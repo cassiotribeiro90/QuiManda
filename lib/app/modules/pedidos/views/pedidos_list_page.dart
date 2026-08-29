@@ -10,8 +10,8 @@ import '../widgets/pedido_empty_widget.dart';
 import '../widgets/status_badge_widget.dart';
 import '../widgets/chat_card_widget.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
-import '../../home/views/home_view.dart';
 
 class PedidosListPage extends StatefulWidget {
   const PedidosListPage({super.key});
@@ -91,13 +91,10 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        title: Row(
+      appBar: CustomAppBar(
+        titleWidget: Row(
           children: [
-            const Text('Pedidos', style: TextStyle(color: Colors.white)),
+            const Text('Pedidos', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             BlocBuilder<PedidosCubit, PedidosState>(
               builder: (context, state) {
@@ -123,12 +120,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
             ),
           ],
         ),
-        leading: MediaQuery.of(context).size.width < 900
-            ? IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-        )
-            : null,
         actions: [
           // 🔥 INDICADOR DE LOOP TTS (NOVO)
           BlocBuilder<PedidosCubit, PedidosState>(

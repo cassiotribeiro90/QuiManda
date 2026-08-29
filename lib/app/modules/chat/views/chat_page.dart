@@ -4,6 +4,7 @@ import '../../../core/responsive/responsive_scaffold.dart';
 import '../bloc/chat_bloc.dart';
 import '../widgets/chat_item_widget.dart';
 import '../../../widgets/generic_filter_widget.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -51,9 +52,8 @@ class _ChatPageState extends State<ChatPage> {
     final isDark = theme.brightness == Brightness.dark;
 
     return ResponsiveScaffold(
-      appBar: AppBar(
-        title: const Text('Conversas'),
-        elevation: 0,
+      appBar: const CustomAppBar(
+        title: 'Minhas Conversas',
       ),
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {

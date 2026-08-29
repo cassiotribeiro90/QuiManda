@@ -5,8 +5,8 @@ import '../cubit/produtos_cubit.dart';
 import '../cubit/produtos_state.dart';
 import 'produto_form_view.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
-import '../../home/views/home_view.dart';
 
 class ProdutosListView extends StatefulWidget {
   const ProdutosListView({super.key});
@@ -27,19 +27,8 @@ class _ProdutosListViewState extends State<ProdutosListView> {
     final currencyFormat = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return ResponsiveScaffold(
-      appBar: AppBar(
-        title: const Text('Produtos'),
-        leading: LayoutBuilder(
-          builder: (context, constraints) {
-            if (MediaQuery.of(context).size.width < 900) {
-              return IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+      appBar: CustomAppBar(
+        title: 'Produtos',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

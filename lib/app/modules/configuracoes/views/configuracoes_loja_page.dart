@@ -4,10 +4,10 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../home/views/home_view.dart';
 import '../bloc/configuracoes_cubit.dart';
 import '../bloc/configuracoes_state.dart';
 import '../models/loja_model.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class ConfiguracoesLojaPage extends StatefulWidget {
   const ConfiguracoesLojaPage({super.key});
@@ -105,17 +105,8 @@ class _ConfiguracoesLojaPageState extends State<ConfiguracoesLojaPage> {
 
         if (isLoading) {
           return ResponsiveScaffold(
-            appBar: AppBar(
-              title: const Text('Configurações', style: TextStyle(color: Colors.white)),
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              automaticallyImplyLeading: false,
-              leading: MediaQuery.of(context).size.width < 900
-                  ? IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-                    )
-                  : null,
+            appBar: const CustomAppBar(
+              title: 'Configurações',
             ),
             body: const Center(child: CircularProgressIndicator()),
           );
@@ -123,17 +114,8 @@ class _ConfiguracoesLojaPageState extends State<ConfiguracoesLojaPage> {
 
         if (state is ConfiguracoesError && !_isDataLoaded) {
           return ResponsiveScaffold(
-            appBar: AppBar(
-              title: const Text('Configurações', style: TextStyle(color: Colors.white)),
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              automaticallyImplyLeading: false,
-              leading: MediaQuery.of(context).size.width < 900
-                  ? IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-                    )
-                  : null,
+            appBar: const CustomAppBar(
+              title: 'Configurações',
             ),
             body: Center(
               child: Column(
@@ -164,17 +146,8 @@ class _ConfiguracoesLojaPageState extends State<ConfiguracoesLojaPage> {
 
         return ResponsiveScaffold(
           maxWidth: 800,
-          appBar: AppBar(
-            title: const Text('Configurações da Loja', style: TextStyle(color: Colors.white)),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-            automaticallyImplyLeading: false,
-            leading: MediaQuery.of(context).size.width < 900
-                ? IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.white),
-                    onPressed: () => HomeView.scaffoldKey.currentState?.openDrawer(),
-                  )
-                : null,
+          appBar: CustomAppBar(
+            title: 'Configurações da Loja',
             actions: [
               if (!isSaving && loja != null)
                 IconButton(
