@@ -13,6 +13,8 @@ import '../modules/configuracoes/views/configuracoes_loja_page.dart';
 import '../modules/store/views/store_selection_page.dart';
 import '../modules/pedidos/views/pedidos_list_page.dart';
 import '../modules/dashboard/views/dashboard_screen.dart';
+import '../modules/all_pedidos/views/all_pedidos_list_screen.dart';
+import '../modules/all_pedidos/views/all_pedido_detail_screen.dart';
 import '../core/navigation/navigation_observer.dart';
 
 // 🔑 Chaves de navegação
@@ -134,6 +136,23 @@ final GoRouter appRouter = GoRouter(
               chatId: chatId,
               pedidoId: pedidoId,
             );
+          },
+        ),
+        GoRoute(
+          path: '/all-pedidos',
+          name: 'all-pedidos',
+          builder: (context, state) {
+            debugPrint('📦 [ROUTER] Abrindo Todos os Pedidos');
+            return const AllPedidosListScreen();
+          },
+        ),
+        GoRoute(
+          path: '/all-pedidos/:id',
+          name: 'all-pedido-detalhe',
+          builder: (context, state) {
+            final id = int.parse(state.pathParameters['id']!);
+            debugPrint('📦 [ROUTER] Abrindo Detalhe do Pedido: $id');
+            return AllPedidoDetailScreen(pedidoId: id);
           },
         ),
       ],

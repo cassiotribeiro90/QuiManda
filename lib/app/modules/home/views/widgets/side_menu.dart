@@ -101,11 +101,20 @@ class _SideMenuState extends State<SideMenu> {
             child: Builder(
               builder: (context) {
                 final String location = GoRouterState.of(context).uri.toString();
-                int currentIndex = 0;
-                if (location.contains('dashboard')) currentIndex = 1;
-                else if (location.contains('cardapio')) currentIndex = 2;
-                else if (location.contains('chat-genericos')) currentIndex = 3;
-                else if (location.contains('configuracoes')) currentIndex = 4;
+                int currentIndex = -1;
+                if (location.endsWith('/pedidos')) {
+                  currentIndex = 0;
+                } else if (location.contains('all-pedidos')) {
+                  currentIndex = 5;
+                } else if (location.contains('dashboard')) {
+                  currentIndex = 1;
+                } else if (location.contains('cardapio')) {
+                  currentIndex = 2;
+                } else if (location.contains('chat-genericos')) {
+                  currentIndex = 3;
+                } else if (location.contains('configuracoes')) {
+                  currentIndex = 4;
+                }
 
                 return ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -113,9 +122,16 @@ class _SideMenuState extends State<SideMenu> {
                     _buildMenuItem(
                       context,
                       icon: Icons.receipt_long,
-                      label: 'Pedidos',
+                      label: 'Acompanhar Pedidos',
                       route: '/pedidos',
                       isSelected: currentIndex == 0,
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.list_alt,
+                      label: 'Todos os Pedidos',
+                      route: '/all-pedidos',
+                      isSelected: currentIndex == 5,
                     ),
                     _buildMenuItem(
                       context,

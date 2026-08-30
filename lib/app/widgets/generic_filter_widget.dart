@@ -9,6 +9,7 @@ class GenericFilterWidget extends StatefulWidget {
   final void Function(Map<String, dynamic>) onApply;
   final int? totalItems;
   final Map<String, dynamic> initialFilters;
+  final FilterCubit? filterCubit; // ⭐ ADICIONADO PARA SUPORTE EXTERNO
 
   const GenericFilterWidget({
     super.key,
@@ -16,6 +17,7 @@ class GenericFilterWidget extends StatefulWidget {
     required this.onApply,
     this.totalItems,
     this.initialFilters = const {},
+    this.filterCubit, // ⭐ ADICIONADO
   });
 
   @override
@@ -30,15 +32,21 @@ class _GenericFilterWidgetState extends State<GenericFilterWidget> {
   void initState() {
     super.initState();
     
-    // 🔥 Inicializa os grupos com as seleções vindas do initialFilters
-    final initializedGroups = widget.groups.map((group) {
-      if (widget.initialFilters.containsKey(group.key)) {
-        return group.copyWith(selectedValue: widget.initialFilters[group.key]);
-      }
-      return group;
-    }).toList();
+    if (widget.filterCubit != null) {
+      // ⭐ USA O CUBIT EXTERNO
+      _filterCubit = widget.filterCubit!;
+      _filterCubit.setGroups(widget.groups);
+    } else {
+      // 🔥 Inicializa os grupos com as seleções vindas do initialFilters
+      final initializedGroups = widget.groups.map((group) {
+        if (widget.initialFilters.containsKey(group.key)) {
+          return group.copyWith(selectedValue: widget.initialFilters[group.key]);
+        }
+        return group;
+      }).toList();
 
-    _filterCubit = FilterCubit(initializedGroups);
+      _filterCubit = FilterCubit(initializedGroups);
+    }
     
     if (widget.initialFilters['search'] != null) {
       _filterCubit.setSearch(widget.initialFilters['search']);
@@ -203,7 +211,10 @@ class _GenericFilterWidgetState extends State<GenericFilterWidget> {
   @override
   void dispose() {
     _searchController.dispose();
-    _filterCubit.close();
+    // 🔥 Só fecha se o Cubit não for externo
+    if (widget.filterCubit == null) {
+      _filterCubit.close();
+    }
     super.dispose();
   }
 }

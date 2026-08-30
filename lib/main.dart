@@ -16,6 +16,7 @@ import 'app/modules/onboarding/bloc/onboarding_cubit.dart';
 import 'app/modules/configuracoes/bloc/configuracoes_cubit.dart';
 import 'app/modules/chat/bloc/chat_bloc.dart';
 import 'app/modules/chat/bloc/chat_badge_cubit.dart';
+import 'app/modules/all_pedidos/bloc/all_pedidos_cubit.dart';
 import 'app/modules/store/bloc/store_cubit.dart';
 import 'app/routes/app_router.dart';
 import 'app/navigation/navigation_cubit.dart';
@@ -66,6 +67,7 @@ class QuiMandaApp extends StatelessWidget {
         BlocProvider<LojaCubit>(create: (context) => getIt<LojaCubit>()),
         BlocProvider<ConfiguracoesCubit>(create: (context) => getIt<ConfiguracoesCubit>()),
         BlocProvider<ChatBadgeCubit>(create: (context) => getIt<ChatBadgeCubit>()..updateBadge()),
+        BlocProvider<AllPedidosCubit>(create: (context) => getIt<AllPedidosCubit>()),
         BlocProvider<ChatBloc>(create: (context) => ChatBloc()),
       ],
       child: AppInitializer(
