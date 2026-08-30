@@ -6,11 +6,13 @@ class FilterOption extends Equatable {
   final String value;
   final String label;
   final int? count;
+  final String? icon;
 
   const FilterOption({
     required this.value,
     required this.label,
     this.count,
+    this.icon,
   });
 
   factory FilterOption.fromJson(Map<String, dynamic> json) {
@@ -18,6 +20,7 @@ class FilterOption extends Equatable {
       value: json['value'] ?? '',
       label: json['label'] ?? '',
       count: json['count'],
+      icon: json['icon'],
     );
   }
 
@@ -25,10 +28,11 @@ class FilterOption extends Equatable {
         'value': value,
         'label': label,
         if (count != null) 'count': count,
+        if (icon != null) 'icon': icon,
       };
 
   @override
-  List<Object?> get props => [value, label, count];
+  List<Object?> get props => [value, label, count, icon];
 }
 
 class FilterGroup extends Equatable {

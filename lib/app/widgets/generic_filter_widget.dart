@@ -84,25 +84,31 @@ class _GenericFilterWidgetState extends State<GenericFilterWidget> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Buscar...',
+                    hintText: 'Pesquisar...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: isDark ? Colors.grey[800] : Colors.grey[200],
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    fillColor: isDark
+                        ? theme.colorScheme.surfaceContainerHighest
+                        : Colors.grey[50],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   onChanged: (value) => _filterCubit.setSearch(value),
                 ),
               ),
-              
+
               // ---- SEÇÕES DE FILTRO (VERTICAL) ----
-              ...state.groups.map((group) => _FilterSection(
-                group: group,
-                onSelected: (value) => _filterCubit.selectOption(group.key, value),
-              )),
+              ...state.groups.map((group) => _FilterGroupChip(
+                    group: group,
+                    onSelected: (value) =>
+                        _filterCubit.selectOption(group.key, value),
+                  )),
 
               // ---- RESUMO DOS FILTROS ATIVOS ----
               if (_hasActiveFilters(state))
@@ -119,7 +125,9 @@ class _GenericFilterWidgetState extends State<GenericFilterWidget> {
                   children: [
                     if (widget.totalItems != null)
                       Text(
-                        '${widget.totalItems} conversas',
+                        _hasActiveFilters(state)
+                            ? 'Mostrando ${widget.totalItems! > 0 ? widget.totalItems : 0} resultados'
+                            : 'Total: ${widget.totalItems} itens',
                         style: theme.textTheme.bodySmall,
                       ),
                     if (_hasActiveFilters(state))
@@ -142,28 +150,46 @@ class _GenericFilterWidgetState extends State<GenericFilterWidget> {
   }
 
   bool _hasActiveFilters(FilterState state) {
-    return state.groups.any((g) => g.selectedValue != null && g.selectedValue != 'todos') ||
+    return state.groups.any((g) {
+          if (g.type == FilterType.multiple) {
+            return g.selectedValues != null && g.selectedValues!.isNotEmpty;
+          }
+          return g.selectedValue != null && g.selectedValue != 'todos';
+        }) ||
         state.searchQuery.isNotEmpty;
   }
 
   Widget _buildFilterSummary(FilterState state) {
     final theme = Theme.of(context);
     final labels = <String>[];
-    
+
     for (var group in state.groups) {
-      if (group.selectedValue != null && group.selectedValue != 'todos') {
-        final option = group.options.firstWhere(
-          (o) => o.value == group.selectedValue,
-          orElse: () => FilterOption(value: '', label: group.selectedValue!),
-        );
-        labels.add(option.label);
+      if (group.type == FilterType.multiple) {
+        if (group.selectedValues != null && group.selectedValues!.isNotEmpty) {
+          for (var val in group.selectedValues!) {
+            final option = group.options.firstWhere(
+              (o) => o.value == val,
+              orElse: () => FilterOption(value: val, label: val),
+            );
+            labels.add(option.label);
+          }
+        }
+      } else {
+        if (group.selectedValue != null && group.selectedValue != 'todos') {
+          final option = group.options.firstWhere(
+            (o) => o.value == group.selectedValue,
+            orElse: () =>
+                FilterOption(value: '', label: group.selectedValue!),
+          );
+          labels.add(option.label);
+        }
       }
     }
-    
+
     if (state.searchQuery.isNotEmpty) {
       labels.add("'${state.searchQuery}'");
     }
-    
+
     return Text(
       labels.join(' · '),
       style: TextStyle(
@@ -182,54 +208,97 @@ class _GenericFilterWidgetState extends State<GenericFilterWidget> {
   }
 }
 
-class _FilterSection extends StatelessWidget {
+class _FilterGroupChip extends StatelessWidget {
   final FilterGroup group;
   final void Function(String) onSelected;
 
-  const _FilterSection({required this.group, required this.onSelected});
+  const _FilterGroupChip({
+    required this.group,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // IGNORA GRUPOS VAZIOS
+    if (group.options.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Cabeçalho do grupo
           Text(
             group.label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.textTheme.bodySmall?.color,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
+
+          // Opções - SEM ÍCONE DE CHECK
           Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 8,
             children: group.options.map((option) {
-              // 🔥 Lógica de Seleção Corrigida: 
-              // Se group.selectedValue for null, seleciona apenas se o valor da opção for exatamente 'todos'.
-              // Caso contrário, seleciona se o valor coincidir.
-              final isSelected = (group.selectedValue == null && option.value == 'todos') || 
-                                 (group.selectedValue == option.value);
-                               
-              return FilterChip(
-                label: Text(option.label),
-                selected: isSelected,
-                onSelected: (_) => onSelected(option.value),
-                selectedColor: theme.primaryColor.withValues(alpha: 0.2),
-                checkmarkColor: theme.primaryColor,
-                backgroundColor: theme.cardColor,
-                labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: isSelected ? theme.primaryColor : null,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected ? theme.primaryColor : Colors.transparent,
-                    width: 1.5,
+              final isOptionSelected = (group.selectedValue == null &&
+                      option.value == 'todos') ||
+                  (group.selectedValue == option.value) ||
+                  (group.selectedValues?.contains(option.value) ?? false);
+
+              return GestureDetector(
+                onTap: () => onSelected(option.value),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isOptionSelected
+                        ? theme.primaryColor
+                        : (isDark
+                            ? theme.colorScheme.surfaceContainerHigh
+                            : Colors.grey[100]),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isOptionSelected
+                          ? theme.primaryColor
+                          : (isDark
+                              ? theme.colorScheme.outlineVariant
+                              : Colors.grey[300]!),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 🔥 Mantém ícone do option se existir
+                      if (option.icon != null) ...[
+                        Text(option.icon!),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        option.count != null
+                            ? '${option.label} (${option.count})'
+                            : option.label,
+                        style: TextStyle(
+                          color: isOptionSelected
+                              ? Colors.white
+                              : (isDark ? Colors.white70 : Colors.black87),
+                          fontSize: 13,
+                          fontWeight: isOptionSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      // 🔥 NÃO ADICIONAR ÍCONE DE CHECK AQUI!
+                    ],
                   ),
                 ),
               );

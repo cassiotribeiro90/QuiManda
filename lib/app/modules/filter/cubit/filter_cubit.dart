@@ -29,30 +29,45 @@ class FilterCubit extends Cubit<FilterState> {
   }
 
   void selectOption(String groupKey, String value) {
-    debugPrint('🟡 [FilterCubit] selectOption: groupKey=$groupKey, value=$value');
+    debugPrint(
+        '🟡 [FilterCubit] selectOption: groupKey=$groupKey, value=$value');
     final groups = state.groups.map((group) {
       if (group.key == groupKey) {
-        // 🔥 Lógica de Toggle Corrigida: 
-        // Se clicar em 'todos', o valor passa a ser 'todos'.
-        // Se clicar em um valor já selecionado, volta para 'todos'.
-        String? nextValue;
-        if (value == 'todos') {
-          nextValue = 'todos';
+        if (group.type == FilterType.multiple) {
+          final currentValues = List<String>.from(group.selectedValues ?? []);
+          if (value == 'todos') {
+            currentValues.clear();
+          } else {
+            if (currentValues.contains(value)) {
+              currentValues.remove(value);
+            } else {
+              currentValues.add(value);
+            }
+          }
+          return group.copyWith(selectedValues: currentValues);
         } else {
-          nextValue = group.selectedValue == value ? 'todos' : value;
+          // 🔥 Lógica de Toggle Corrigida:
+          // Se clicar em 'todos', o valor passa a ser 'todos'.
+          // Se clicar em um valor já selecionado, volta para 'todos'.
+          String? nextValue;
+          if (value == 'todos') {
+            nextValue = 'todos';
+          } else {
+            nextValue = group.selectedValue == value ? 'todos' : value;
+          }
+
+          debugPrint('🟡 [FilterCubit] Proximo valor para $groupKey: $nextValue');
+          return group.copyWith(selectedValue: nextValue);
         }
-        
-        debugPrint('🟡 [FilterCubit] Proximo valor para $groupKey: $nextValue');
-        return group.copyWith(selectedValue: nextValue);
       }
       return group;
     }).toList();
-    
+
     if (const ListEquality().equals(groups, state.groups)) {
       debugPrint('🟡 [FilterCubit] Grupos iguais, ignorando');
       return;
     }
-    
+
     emit(state.copyWith(groups: groups));
     _applyFilters();
   }
@@ -67,15 +82,18 @@ class FilterCubit extends Cubit<FilterState> {
   void clearFilters() {
     debugPrint('🟡 [FilterCubit] clearFilters');
     final clearedGroups = state.groups.map((group) {
-      return group.copyWith(selectedValue: 'todos');
+      return group.copyWith(
+        selectedValue: 'todos',
+        selectedValues: [],
+      );
     }).toList();
-    
+
     // 🔥 Mantemos o appliedParams atual para que o _applyFilters detecte a mudança
     emit(state.copyWith(
       groups: clearedGroups,
       searchQuery: '',
     ));
-    
+
     // Força a aplicação para gerar o novo appliedParams e disparar o listener na UI
     _applyFilters(force: true);
   }
@@ -83,9 +101,15 @@ class FilterCubit extends Cubit<FilterState> {
   void _applyFilters({bool force = false}) {
     final params = <String, dynamic>{};
     for (var group in state.groups) {
-      // 🔥 Se o valor for 'todos' ou null, não incluímos na query params
-      if (group.selectedValue != null && group.selectedValue != 'todos') {
-        params[group.key] = group.selectedValue;
+      if (group.type == FilterType.multiple) {
+        if (group.selectedValues != null && group.selectedValues!.isNotEmpty) {
+          params[group.key] = group.selectedValues;
+        }
+      } else {
+        // 🔥 Se o valor for 'todos' ou null, não incluímos na query params
+        if (group.selectedValue != null && group.selectedValue != 'todos') {
+          params[group.key] = group.selectedValue;
+        }
       }
     }
     if (state.searchQuery.isNotEmpty) {
