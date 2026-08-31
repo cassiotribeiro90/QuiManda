@@ -114,6 +114,8 @@ class _SideMenuState extends State<SideMenu> {
                   currentIndex = 3;
                 } else if (location.contains('configuracoes')) {
                   currentIndex = 4;
+                } else if (location.contains('avaliacoes')) {
+                  currentIndex = 6;
                 }
 
                 return ListView(
@@ -147,7 +149,16 @@ class _SideMenuState extends State<SideMenu> {
                       route: '/cardapio',
                       isSelected: currentIndex == 2,
                     ),
-                    
+
+                    // 🔥 NOVO ITEM: AVALIAÇÕES
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.star_outline,
+                      label: 'Avaliações',
+                      route: '/avaliacoes',
+                      isSelected: currentIndex == 6,
+                    ),
+
                     // 🔥 ATUALIZADO: CHATS COM CHATBADGECUBIT
                     BlocBuilder<ChatBadgeCubit, int>(
                       builder: (context, badgeCount) {

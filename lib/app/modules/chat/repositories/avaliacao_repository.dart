@@ -1,6 +1,6 @@
 
-import '../../avaliacao/models/avaliacao_model.dart';
-import '../../avaliacao/models/resumo_avaliacao_model.dart';
+import '../../avaliacoes/models/avaliacao_model.dart';
+import '../../avaliacoes/models/resumo_avaliacao_model.dart';
 import 'base_repository.dart';
 
 class AvaliacaoRepository extends BaseRepository {

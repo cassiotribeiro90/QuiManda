@@ -12,7 +12,6 @@ class PedidoStatusSection extends StatelessWidget {
   final Function(int) onAceitar;
   final Function(int) onRecusar;
   final Function(int, String) onAtualizarStatus;
-  final Function(PedidoModel) onCardTap;
 
   const PedidoStatusSection({
     super.key,
@@ -24,7 +23,6 @@ class PedidoStatusSection extends StatelessWidget {
     required this.onAceitar,
     required this.onRecusar,
     required this.onAtualizarStatus,
-    required this.onCardTap,
   });
 
   Color get _corStatus {

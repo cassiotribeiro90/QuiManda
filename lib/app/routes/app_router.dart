@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../modules/chat/views/chat_page.dart';
 import '../modules/chat/views/chat_screen.dart';
 import '../widgets/splash_screen.dart';
@@ -15,6 +16,11 @@ import '../modules/pedidos/views/pedidos_list_page.dart';
 import '../modules/dashboard/views/dashboard_screen.dart';
 import '../modules/all_pedidos/views/all_pedidos_list_screen.dart';
 import '../modules/all_pedidos/views/all_pedido_detail_screen.dart';
+
+// 🔥 AVALIAÇÕES
+import '../modules/avaliacoes/views/avaliacoes_list_screen.dart';
+import '../modules/avaliacoes/views/avaliacao_detalhe_screen.dart';
+
 import '../core/navigation/navigation_observer.dart';
 
 // 🔑 Chaves de navegação
@@ -23,7 +29,7 @@ final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
-  initialLocation: '/pedidos', // 🔥 TELA INICIAL = PEDIDOS
+  initialLocation: '/pedidos',
   debugLogDiagnostics: true,
   observers: [NavigationObserver()],
   routes: [
@@ -31,7 +37,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       name: 'splash',
-      redirect: (context, state) => '/pedidos', // 🔥 Redireciona raiz para pedidos
+      redirect: (context, state) => '/pedidos',
       builder: (context, state) {
         debugPrint('🔄 [ROUTER] Abrindo Splash');
         return const SplashScreen();
@@ -129,9 +135,9 @@ final GoRouter appRouter = GoRouter(
             final args = state.extra as Map<String, dynamic>?;
             final chatId = args?['chatId'] as int?;
             final pedidoId = args?['pedidoId'] as int?;
-            
+
             debugPrint('💬 [ROUTER] Abrindo Chat Detalhe. ChatId: $chatId, PedidoId: $pedidoId');
-            
+
             return ChatScreen(
               chatId: chatId,
               pedidoId: pedidoId,
@@ -155,6 +161,25 @@ final GoRouter appRouter = GoRouter(
             return AllPedidoDetailScreen(pedidoId: id);
           },
         ),
+
+        // ============= 🔥 ROTAS DE AVALIAÇÕES =============
+        GoRoute(
+          path: '/avaliacoes',
+          name: 'avaliacoes',
+          builder: (context, state) {
+            debugPrint('⭐ [ROUTER] Abrindo Avaliações');
+            return const AvaliacoesListScreen();
+          },
+        ),
+        GoRoute(
+          path: '/avaliacoes/detalhe',
+          name: 'avaliacao-detalhe',
+          builder: (context, state) {
+            final avaliacao = state.extra as dynamic;
+            debugPrint('⭐ [ROUTER] Abrindo Detalhe da Avaliação: ${avaliacao.id}');
+            return AvaliacaoDetalheScreen(avaliacao: avaliacao);
+          },
+        ),
       ],
     ),
 
@@ -162,7 +187,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/formulario-produto',
       name: 'formulario-produto',
-      parentNavigatorKey: rootNavigatorKey, // Abre por cima da Shell
+      parentNavigatorKey: rootNavigatorKey,
       builder: (context, state) {
         final args = state.extra as Map<String, dynamic>?;
         final produto = args?['produto'];

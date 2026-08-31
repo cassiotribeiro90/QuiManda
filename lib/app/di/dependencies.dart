@@ -28,6 +28,10 @@ import '../modules/chat/repositories/chat_repository.dart';
 import '../modules/chat/bloc/chat_badge_cubit.dart';
 import '../modules/all_pedidos/di/all_pedidos_di.dart';
 
+// 🔥 NOVO: AVALIAÇÕES
+import '../modules/avaliacoes/services/avaliacao_service.dart';
+import '../modules/avaliacoes/bloc/avaliacoes_cubit.dart';
+
 import '../core/storage/store_storage.dart';
 import '../modules/store/bloc/store_cubit.dart';
 import '../core/services/tts_config_service.dart';
@@ -39,17 +43,17 @@ final getIt = GetIt.instance;
 Future<void> setupDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
-  
+
   // 🔥 1. Cria o StoreStorage (async)
   final storeStorage = await StoreStorage.create();
   getIt.registerSingleton<StoreStorage>(storeStorage);
-  
+
   // Services
   getIt.registerLazySingleton<StorageService>(() => StorageService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TtsConfigService>(() => TtsConfigService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<DeviceService>(() => DeviceService(getIt<SharedPreferences>()));
   getIt.registerLazySingleton<TokenService>(() => TokenService(getIt<SharedPreferences>()));
-  
+
   getIt.registerLazySingleton<StoreCubit>(() => StoreCubit(getIt<StoreStorage>()));
 
   getIt.registerLazySingleton<ApiClient>(() => ApiClient(
@@ -72,14 +76,13 @@ Future<void> setupDependencies() async {
     getIt<StoreStorage>(),
   ));
   getIt.registerFactory<AuthCubit>(() => AuthCubit(
-    authService: getIt<AuthService>(), 
-    tokenService: getIt<TokenService>(), 
-    storageService: getIt<StorageService>(), 
+    authService: getIt<AuthService>(),
+    tokenService: getIt<TokenService>(),
+    storageService: getIt<StorageService>(),
     fcmService: getIt<FcmService>(),
     deviceService: getIt<DeviceService>(),
     storeStorage: getIt<StoreStorage>(),
   ));
-
 
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(() => DashboardRepository(getIt<ApiClient>()));
@@ -119,4 +122,10 @@ Future<void> setupDependencies() async {
 
   // All Pedidos
   registerAllPedidosModule();
+
+  // ============================================================
+  // 🔥 AVALIAÇÕES
+  // ============================================================
+  getIt.registerLazySingleton<AvaliacaoService>(() => AvaliacaoService(getIt<ApiClient>()));
+  getIt.registerFactory<AvaliacoesCubit>(() => AvaliacoesCubit(getIt<AvaliacaoService>()));
 }

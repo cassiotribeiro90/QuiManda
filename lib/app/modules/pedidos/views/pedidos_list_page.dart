@@ -4,10 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../cubit/pedidos_cubit.dart';
 import '../cubit/pedidos_state.dart';
-import '../model/pedido_model.dart';
 import '../widgets/pedido_status_section.dart';
 import '../widgets/pedido_empty_widget.dart';
-import '../widgets/status_badge_widget.dart';
 import '../widgets/chat_card_widget.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../widgets/custom_app_bar.dart';
@@ -300,7 +298,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
                         onRecusar: (id) => _mostrarMotivoRecusa(context, id),
                         onAtualizarStatus: (id, novoStatus) =>
                             context.read<PedidosCubit>().atualizarStatus(id, novoStatus),
-                        onCardTap: (pedido) => _abrirDetalhes(context, pedido),
                       )),
                 ],
               ),
@@ -320,104 +317,6 @@ class _PedidosListPageState extends State<PedidosListPage> with WidgetsBindingOb
     GoRouter.of(context).pushNamed(
       'chat-detalhe',
       extra: {'chatId': chatId, 'isGeneric': true},
-    );
-  }
-
-  void _abrirDetalhes(BuildContext context, PedidoModel pedido) {
-    debugPrint('📦 [UI] Abrindo detalhes do pedido #${pedido.codigo ?? pedido.id}');
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        final trocoPara = pedido.trocoPara;
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Pedido #${pedido.codigo ?? pedido.id}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  StatusBadgeWidget(status: pedido.status),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildInfoRow('Cliente', pedido.clienteNome ?? 'N/A'),
-              _buildInfoRow('Telefone', pedido.clienteTelefone ?? 'N/A'),
-              const SizedBox(height: 12),
-              _buildInfoRow('Subtotal', 'R\$ ${pedido.subtotal?.toStringAsFixed(2) ?? '0,00'}'),
-              _buildInfoRow('Taxa entrega', 'R\$ ${pedido.taxaEntrega?.toStringAsFixed(2) ?? '0,00'}'),
-              _buildInfoRow('Total', 'R\$ ${pedido.total.toStringAsFixed(2)}', isBold: true),
-              const SizedBox(height: 12),
-              _buildInfoRow('Forma pagamento', pedido.formaPagamento ?? 'N/A'),
-              if (trocoPara != null && trocoPara > 0)
-                _buildInfoRow('Troco para', 'R\$ ${trocoPara.toStringAsFixed(2)}'),
-              const SizedBox(height: 12),
-              if (pedido.itens.isNotEmpty) ...[
-                const Text(
-                  'Itens:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: pedido.itens.length,
-                    itemBuilder: (context, index) {
-                      final item = pedido.itens[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text('${item.quantidade}x ${item.nome} - R\$ ${item.precoUnitario.toStringAsFixed(2)}'),
-                      );
-                    },
-                  ),
-                ),
-              ],
-              if (pedido.observacoes != null && pedido.observacoes!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Observações: ${pedido.observacoes}',
-                  style: const TextStyle(fontStyle: FontStyle.italic),
-                ),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    debugPrint('⬅️ [NAVIGATION] Fechando detalhes do pedido');
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Fechar'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 

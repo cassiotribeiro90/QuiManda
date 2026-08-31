@@ -16,7 +16,7 @@ class AvaliacaoModel extends Equatable {
   final String criadoEm;
   final String? atualizadoEm;
   final String? deletadoEm;
-  
+
   // Campos relacionados (para exibição)
   final String? usuarioNome;
   final String? lojaNome;
@@ -126,6 +126,9 @@ class AvaliacaoModel extends Equatable {
   bool get hasResposta => resposta != null && resposta!.isNotEmpty;
   bool get isLoja => produtoId == null;
   bool get isProduto => produtoId != null;
+
+  // 🔥 NOVO GETTER
+  bool get isPedido => pedidoId != null && produtoId == null;
 
   String get statusLabel {
     switch (status) {

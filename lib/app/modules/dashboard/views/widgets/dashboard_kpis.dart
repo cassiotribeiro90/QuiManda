@@ -6,10 +6,18 @@ class DashboardKpis extends StatelessWidget {
 
   const DashboardKpis({super.key, required this.kpis, this.isMobile = false});
 
+  /// Converte qualquer valor (num ou string) para double e formata com 2 casas decimais.
   String _formatarNumero(dynamic valor) {
     if (valor == null) return '0';
     final numero = valor is num ? valor.toDouble() : double.tryParse(valor.toString()) ?? 0;
     return numero.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
+  /// Converte para double com 1 casa decimal (para avaliação média).
+  String _formatarAvaliacao(dynamic valor) {
+    if (valor == null) return '0,0';
+    final numero = valor is num ? valor.toDouble() : double.tryParse(valor.toString()) ?? 0;
+    return numero.toStringAsFixed(1).replaceAll('.', ',');
   }
 
   @override
@@ -40,7 +48,7 @@ class DashboardKpis extends StatelessWidget {
         icon: Icons.star,
         color: Colors.purple,
         title: 'Avaliação Média',
-        value: '${(kpis['avaliacao_media'] ?? 0).toStringAsFixed(1)}',
+        value: _formatarAvaliacao(kpis['avaliacao_media'] ?? 0),
         subtitle: '${kpis['clientes_unicos'] ?? 0} clientes únicos',
       ),
     ];
@@ -53,7 +61,7 @@ class DashboardKpis extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      mainAxisExtent: isMobile ? 110 : 100, // Aumentado para evitar overflow
+      mainAxisExtent: isMobile ? 110 : 100,
       children: cards,
     );
   }

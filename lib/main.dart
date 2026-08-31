@@ -18,6 +18,10 @@ import 'app/modules/chat/bloc/chat_bloc.dart';
 import 'app/modules/chat/bloc/chat_badge_cubit.dart';
 import 'app/modules/all_pedidos/bloc/all_pedidos_cubit.dart';
 import 'app/modules/store/bloc/store_cubit.dart';
+
+// 🔥 NOVO: AVALIAÇÕES
+import 'app/modules/avaliacoes/bloc/avaliacoes_cubit.dart';
+
 import 'app/routes/app_router.dart';
 import 'app/navigation/navigation_cubit.dart';
 import 'app/navigation/app_router_listener.dart';
@@ -29,20 +33,20 @@ import 'firebase_options.dart';
 void main() async {
   debugPrint('🚀 [MAIN] Iniciando aplicação quiManda...');
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   setPathUrlStrategy();
   debugPrint('🌐 [MAIN] URL Strategy configurada');
-  
+
   if (kIsWeb || !Platform.isWindows) {
     debugPrint('🔥 [MAIN] Inicializando Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
-  
+
   debugPrint('📦 [MAIN] Configurando injeção de dependências...');
   await setupDependencies();
-  
+
   runApp(const QuiMandaApp());
   debugPrint('✅ [MAIN] App carregado com sucesso');
 }
@@ -69,6 +73,9 @@ class QuiMandaApp extends StatelessWidget {
         BlocProvider<ChatBadgeCubit>(create: (context) => getIt<ChatBadgeCubit>()..updateBadge()),
         BlocProvider<AllPedidosCubit>(create: (context) => getIt<AllPedidosCubit>()),
         BlocProvider<ChatBloc>(create: (context) => ChatBloc()),
+
+        // 🔥 NOVO: AVALIAÇÕES
+        BlocProvider<AvaliacoesCubit>(create: (context) => getIt<AvaliacoesCubit>()),
       ],
       child: AppInitializer(
         child: MaterialApp.router(
@@ -77,10 +84,7 @@ class QuiMandaApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           routerConfig: appRouter,
           builder: (context, child) {
-            // 🔥 Injeta o contexto no FCM
             FcmService().context = context;
-
-            // ⚠️ O AppRouterListener DEVE estar DENTRO do MaterialApp para acessar o GoRouter
             return AppRouterListener(
               child: child ?? const SizedBox.shrink(),
             );

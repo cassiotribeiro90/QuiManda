@@ -25,7 +25,7 @@ class _PedidoMapaState extends State<PedidoMapa> {
   @override
   void initState() {
     super.initState();
-    _isExpanded = widget.isExpanded;
+    _isExpanded = false; // Garante que inicie recolhido
   }
 
   void _toggleExpand() {
@@ -57,19 +57,21 @@ class _PedidoMapaState extends State<PedidoMapa> {
           _buildHeader(context),
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            height: _isExpanded ? 300 : 150,
+            height: _isExpanded ? 300 : 0, // Altura 0 quando recolhido
             width: double.infinity,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: OpenStreetMapWidget(
-                latitude: widget.latitude!,
-                longitude: widget.longitude!,
-                zoom: _isExpanded ? 18.0 : 15.0,
-                title: widget.enderecoResumido,
-              ),
+              child: _isExpanded
+                  ? OpenStreetMapWidget(
+                      latitude: widget.latitude!,
+                      longitude: widget.longitude!,
+                      zoom: 18.0,
+                      title: widget.enderecoResumido,
+                    )
+                  : const SizedBox.shrink(), // Lazy loading: só constrói se expandido
             ),
           ),
         ],

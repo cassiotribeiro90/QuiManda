@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:quimanda/app/shared/widgets/star_rating.dart';
 
-import '../../modules/avaliacao/models/avaliacao_model.dart';
+import '../../modules/avaliacoes/models/avaliacao_model.dart';
+
 
 class AvaliacaoCard extends StatelessWidget {
   final AvaliacaoModel avaliacao;

@@ -100,6 +100,7 @@ class PedidoCardWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         padding: const EdgeInsets.all(20),
+        constraints: const BoxConstraints(minHeight: 300), // 🔥 Altura mínima para garantir visibilidade
         decoration: BoxDecoration(
           color: isDark ? Colors.grey.shade900 : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -175,14 +176,24 @@ class PedidoCardWidget extends StatelessWidget {
                 const Icon(Icons.person_outline, size: 20, color: Color(0xFF64748B)),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    pedido.clienteNome ?? 'Cliente',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF334155),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pedido.clienteNome ?? 'Cliente',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF334155),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (pedido.clienteTelefone != null)
+                        Text(
+                          pedido.clienteTelefone!,
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -212,7 +223,6 @@ class PedidoCardWidget extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // 🔥 BADGE 1: MENSAGENS NÃO LIDAS (VERMELHO - TOPO)
                       if (pedido.naoLidas > 0)
                         Positioned(
                           top: -6,
@@ -238,7 +248,6 @@ class PedidoCardWidget extends StatelessWidget {
                             ),
                           ),
                         ),
-                      // 🔥 BADGE 2: TOTAL DE MENSAGENS (LARANJA - BAIXO)
                       if (pedido.totalMensagens > 0)
                         Positioned(
                           bottom: -6,
@@ -285,13 +294,28 @@ class PedidoCardWidget extends StatelessWidget {
                   style: const TextStyle(fontSize: 15, color: Color(0xFF334155)),
                 ),
                 const Spacer(),
-                Text(
-                  'R\$ ${pedido.total.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (pedido.subtotal != null)
+                      Text(
+                        'Subtotal: R\$ ${pedido.subtotal!.toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    if (pedido.taxaEntrega != null)
+                      Text(
+                        'Taxa: R\$ ${pedido.taxaEntrega!.toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    Text(
+                      'Total: R\$ ${pedido.total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -412,7 +436,8 @@ class PedidoCardWidget extends StatelessWidget {
               const SizedBox(height: 16),
             ],
 
-            // ==================== MAPA ====================
+            // ==================== LOCALIZAÇÃO (MAPA) ====================
+            // 🔥 Removido o ExpansionTile do card, mantendo o expansor do próprio PedidoMapa
             PedidoMapa(
               latitude: pedido.latitude,
               longitude: pedido.longitude,
@@ -474,7 +499,6 @@ class PedidoCardWidget extends StatelessWidget {
     );
   }
 
-  // 🔥 Metodo para abrir a tela de chat
   void _abrirChatApp(BuildContext context) {
     Navigator.push(
       context,
