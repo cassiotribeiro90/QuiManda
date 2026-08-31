@@ -6,6 +6,8 @@ import '../bloc/all_pedidos_state.dart';
 import '../widgets/all_pedido_card_widget.dart';
 import '../../home/views/widgets/side_menu.dart';
 import '../../../widgets/generic_filter_widget.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class AllPedidosListScreen extends StatefulWidget {
   const AllPedidosListScreen({super.key});
@@ -48,23 +50,9 @@ class _AllPedidosListScreenState extends State<AllPedidosListScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Todos os Pedidos',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            tooltip: 'Abrir menu',
-          ),
-        ),
+    return ResponsiveScaffold(
+      appBar: CustomAppBar(
+        title: 'Todos os Pedidos',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),

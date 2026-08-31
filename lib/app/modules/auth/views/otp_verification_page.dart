@@ -7,6 +7,7 @@ import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../store/bloc/store_cubit.dart';
 import '../../store/bloc/store_state.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String telefone;
@@ -49,7 +50,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
-      appBar: AppBar(title: const Text('Verificação')),
+      appBar: const CustomAppBar(
+        title: 'Verificação',
+        automaticallyImplyLeading: true,
+      ),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {

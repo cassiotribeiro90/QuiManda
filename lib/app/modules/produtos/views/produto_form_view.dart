@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/produtos_cubit.dart';
 import '../model/produto_model.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class ProdutoFormView extends StatefulWidget {
   final ProdutoModel? produto;
@@ -30,8 +32,11 @@ class _ProdutoFormViewState extends State<ProdutoFormView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.produto == null ? 'Novo Produto' : 'Editar Produto')),
+    return ResponsiveScaffold(
+      appBar: CustomAppBar(
+        title: widget.produto == null ? 'Novo Produto' : 'Editar Produto',
+        automaticallyImplyLeading: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -52,7 +57,10 @@ class _ProdutoFormViewState extends State<ProdutoFormView> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _precoController,
-                decoration: const InputDecoration(labelText: 'Preço', prefixText: 'R\$ '),
+                decoration: const InputDecoration(
+                  labelText: 'Preço',
+                  prefixText: 'R\$ ',
+                ),
                 keyboardType: TextInputType.number,
                 validator: (value) => value == null || double.tryParse(value) == null ? 'Preço inválido' : null,
               ),

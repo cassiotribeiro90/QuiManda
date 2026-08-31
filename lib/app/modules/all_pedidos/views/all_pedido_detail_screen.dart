@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/all_pedidos_cubit.dart';
 import '../models/all_pedido_model.dart';
+import '../../../core/responsive/responsive_scaffold.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class AllPedidoDetailScreen extends StatefulWidget {
   final int pedidoId;
@@ -82,24 +84,20 @@ class _AllPedidoDetailScreenState extends State<AllPedidoDetailScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     if (_loading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Detalhes do Pedido'),
-          backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 2,
+      return const ResponsiveScaffold(
+        appBar: CustomAppBar(
+          title: 'Detalhes do Pedido',
+          automaticallyImplyLeading: true,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null || _pedido == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Detalhes do Pedido'),
-          backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 2,
+      return ResponsiveScaffold(
+        appBar: const CustomAppBar(
+          title: 'Detalhes do Pedido',
+          automaticallyImplyLeading: true,
         ),
         body: Center(
           child: Column(
@@ -134,22 +132,14 @@ class _AllPedidoDetailScreenState extends State<AllPedidoDetailScreen> {
 
     final pedido = _pedido!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Pedido ${pedido.codigo}'),
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-          tooltip: 'Voltar',
-        ),
+    return ResponsiveScaffold(
+      appBar: CustomAppBar(
+        title: 'Pedido ${pedido.codigo}',
+        automaticallyImplyLeading: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadPedido,
-            tooltip: 'Atualizar',
           ),
         ],
       ),

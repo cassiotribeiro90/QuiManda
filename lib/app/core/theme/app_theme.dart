@@ -24,10 +24,10 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         elevation: 0,
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: Colors.white,
         centerTitle: false,
-        titleTextStyle: AppTextStyles.titleMedium.copyWith(color: Colors.black),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        titleTextStyle: AppTextStyles.titleMedium.copyWith(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
 
       textTheme: const TextTheme(

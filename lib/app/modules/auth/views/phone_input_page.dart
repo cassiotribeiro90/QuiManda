@@ -6,6 +6,7 @@ import '../cubit/auth_state.dart';
 import '../../../navigation/navigation_cubit.dart';
 import '../../../core/responsive/responsive_scaffold.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class PhoneInputPage extends StatefulWidget {
   const PhoneInputPage({super.key});
@@ -30,7 +31,11 @@ class _PhoneInputPageState extends State<PhoneInputPage> {
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: const CustomAppBar(
+        title: 'Login',
+        automaticallyImplyLeading: false,
+        leading: SizedBox.shrink(),
+      ),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthPhoneSent) {

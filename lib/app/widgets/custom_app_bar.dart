@@ -25,20 +25,26 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Theme.of(context).primaryColor,
       foregroundColor: Colors.white,
       automaticallyImplyLeading: automaticallyImplyLeading,
+      titleTextStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+      iconTheme: const IconThemeData(color: Colors.white),
       title: titleWidget ?? (title != null 
           ? Text(
               title!,
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             )
           : null),
-      leading: leading ?? (!isDesktop
+      leading: leading ?? (automaticallyImplyLeading ? null : (!isDesktop
           ? IconButton(
               icon: const Icon(Icons.menu, color: Colors.white),
               onPressed: () {
                 HomeView.scaffoldKey.currentState?.openDrawer();
               },
             )
-          : null),
+          : null)),
       actions: actions,
       elevation: 0,
     );
