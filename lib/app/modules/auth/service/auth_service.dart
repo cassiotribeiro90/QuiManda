@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/api_client.dart';
-import '../../../core/constants.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../services/token_service.dart';
 import '../../../core/storage/store_storage.dart';
 
@@ -67,7 +67,7 @@ class AuthService {
     try {
       // 🔥 Usa um Dio separado SEM interceptors para evitar loop
       final dio = Dio(BaseOptions(
-        baseUrl: AppConstants.baseUrl,
+        baseUrl: AppConstants.apiBaseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {

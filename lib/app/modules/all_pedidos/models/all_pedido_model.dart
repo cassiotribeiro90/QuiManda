@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/utils/image_helper.dart';
 
 class AllPedido {
   final int id;
@@ -104,6 +105,11 @@ class AllPedido {
   String get trocoParaFormatado => trocoPara != null ? 'R\$ ${trocoPara!.toStringAsFixed(2)}' : '--';
   String get distanciaFormatada => distanciaKm != null ? '${distanciaKm!.toStringAsFixed(1)} km' : '--';
   
+  String get lojaImagemUrl {
+    if (lojaImagem == null || lojaImagem!.isEmpty) return '';
+    return ImageHelper.getFullImageUrl(lojaImagem);
+  }
+
   String get enderecoCompleto {
     if (enderecoEntrega == null) return 'Endereço não informado';
     final e = enderecoEntrega!;
@@ -339,6 +345,11 @@ class AllPedidoItem {
 
   String get totalFormatado => 'R\$ ${total.toStringAsFixed(2)}';
   String get precoUnitarioFormatado => 'R\$ ${precoUnitario.toStringAsFixed(2)}';
+
+  String get imagemUrl {
+    if (imagem == null || imagem!.isEmpty) return '';
+    return ImageHelper.getFullImageUrl(imagem);
+  }
 
   factory AllPedidoItem.fromJson(Map<String, dynamic> json) {
     return AllPedidoItem(

@@ -34,9 +34,9 @@ class ProdutoCard extends StatelessWidget {
                 // Imagem do produto
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: produto.imagem != null && produto.imagem!.isNotEmpty
+                  child: produto.imagemUrl.isNotEmpty
                       ? CachedNetworkImage(
-                          imageUrl: produto.imagem!,
+                          imageUrl: produto.imagemUrl,
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,

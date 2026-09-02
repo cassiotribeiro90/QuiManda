@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import '../../../shared/utils/image_helper.dart';
 
 // Função para converter string para double com segurança
 double? _parseDouble(dynamic value) {
@@ -130,6 +131,15 @@ class ProdutoModel extends Equatable {
     final valor = precoPromocional ?? preco;
     return 'R\$ ${valor.toStringAsFixed(2)}';
   }
+
+  // 🔥 Getter para URL completa
+  String get imagemUrl {
+    if (imagem == null || imagem!.isEmpty) return '';
+    return ImageHelper.getFullImageUrl(imagem);
+  }
+
+  // 🔥 Getter para caminho relativo
+  String? get imagemPath => imagem;
 
   // ===== From JSON =====
   factory ProdutoModel.fromJson(Map<String, dynamic> json) {

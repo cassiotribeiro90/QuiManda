@@ -12,6 +12,11 @@ import '../../auth/cubit/auth_cubit.dart';
 import '../../auth/cubit/auth_state.dart';
 import '../../../navigation/navigation_cubit.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../../../shared/widgets/product_image_picker.dart';
+import '../../../shared/services/upload_service.dart';
+import '../../../shared/utils/image_helper.dart';
+import '../../../core/storage/store_storage.dart';
+import 'package:get_it/get_it.dart';
 
 class FormularioProdutoPage extends StatefulWidget {
   final ProdutoModel? produto;
@@ -35,6 +40,8 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
   late TextEditingController _tempoPreparoController;
   late TextEditingController _ordemController;
   late TextEditingController _estoqueController;
+
+  String? _imagemPath;
 
   // IDs e seleções
   int? _categoriaId;
@@ -76,6 +83,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
     _precoController = TextEditingController(text: p?.preco.toString() ?? '');
     _precoPromocionalController = TextEditingController(text: p?.precoPromocional?.toString() ?? '');
     _imagemController = TextEditingController(text: p?.imagem ?? '');
+    _imagemPath = p?.imagem;
     _ingredientesController = TextEditingController(text: p?.ingredientesTexto ?? '');
     _tempoPreparoController = TextEditingController(text: p?.tempoPreparoMin?.toString() ?? '');
     _ordemController = TextEditingController(text: p?.ordem.toString() ?? '0');
@@ -88,6 +96,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
     _precoController.text = produto.preco.toString();
     _precoPromocionalController.text = produto.precoPromocional?.toString() ?? '';
     _imagemController.text = produto.imagem ?? '';
+    _imagemPath = ImageHelper.extractPath(produto.imagem) ?? produto.imagem;
     _ingredientesController.text = produto.ingredientesTexto ?? '';
     _tempoPreparoController.text = produto.tempoPreparoMin?.toString() ?? '';
     _ordemController.text = produto.ordem.toString();
@@ -384,32 +393,44 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
   }
 
   Widget _buildImageCard(BuildContext context) {
+    final storeId = GetIt.instance<StoreStorage>().getSelectedStoreId();
+
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader(context, icon: Icons.image_outlined, title: 'Imagem'),
+          _buildSectionHeader(context, icon: Icons.image_outlined, title: 'Imagem do Produto'),
           const SizedBox(height: 20),
-          TextFormField(
-            controller: _imagemController,
-            decoration: const InputDecoration(labelText: 'URL da Imagem', prefixIcon: Icon(Icons.link), border: OutlineInputBorder()),
-            onChanged: (_) => setState(() {}),
+          Center(
+            child: ProductImagePicker(
+              initialImagePath: _imagemPath,
+              folder: UploadService.FOLDER_PRODUCTS,
+              size: 150,
+              storeId: storeId,
+              onImageSelected: (path) {
+                setState(() {
+                  _imagemPath = path;
+                  _imagemController.text = path ?? '';
+                });
+              },
+              onUploadError: (error) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erro no upload: $error'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+            ),
           ),
-          if (_imagemController.text.isNotEmpty)
+          if (_imagemPath != null && _imagemPath!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  _imagemController.text,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    height: 150,
-                    color: Colors.grey[200],
-                    child: const Center(child: Text('Imagem inválida')),
-                  ),
+              child: Center(
+                child: Text(
+                  'Caminho: $_imagemPath',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -585,7 +606,7 @@ class _FormularioProdutoPageState extends State<FormularioProdutoPage> {
       'descricao': _descricaoController.text,
       'preco': preco,
       'preco_promocional': precoPromo,
-      'imagem': _imagemController.text,
+      'imagem': _imagemPath,
       'contem_gluten': _contemGluten ? 1 : 0,
       'contem_lactose': _contemLactose ? 1 : 0,
       'vegano': _vegano ? 1 : 0,

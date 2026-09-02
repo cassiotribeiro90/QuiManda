@@ -1,3 +1,5 @@
+import '../../../shared/utils/image_helper.dart';
+
 class LojaModel {
   final int id;
   final String nome;
@@ -8,6 +10,14 @@ class LojaModel {
   final String? instagram;
   final String? logo;
   final String? capa;
+
+  String get logoUrl => logo != null && logo!.isNotEmpty
+      ? ImageHelper.getFullImageUrl(logo)
+      : '';
+
+  String get capaUrl => capa != null && capa!.isNotEmpty
+      ? ImageHelper.getFullImageUrl(capa)
+      : '';
 
   LojaModel({
     required this.id,

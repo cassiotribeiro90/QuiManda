@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/chat_nao_lido.dart';
+import '../../../shared/utils/image_helper.dart';
 
 class ChatCardWidget extends StatelessWidget {
   final ChatNaoLido chat;
@@ -25,10 +26,10 @@ class ChatCardWidget extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: Colors.blue.shade100,
-          backgroundImage: chat.clienteAvatar != null
-              ? NetworkImage(chat.clienteAvatar!)
+          backgroundImage: chat.clienteAvatar != null && chat.clienteAvatar!.isNotEmpty
+              ? NetworkImage(ImageHelper.getFullImageUrl(chat.clienteAvatar))
               : null,
-          child: chat.clienteAvatar == null
+          child: chat.clienteAvatar == null || chat.clienteAvatar!.isEmpty
               ? Text(
                   chat.clienteNome.isNotEmpty ? chat.clienteNome[0].toUpperCase() : '?',
                   style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),

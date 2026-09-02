@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import '../services/token_service.dart';
+import 'constants/app_constants.dart';
 import 'interceptors/refresh_interceptor.dart';
-import 'constants.dart';
 import 'storage/store_storage.dart';
 import 'navigation/navigation_service.dart';
 
@@ -16,7 +16,7 @@ class ApiClient {
 
   ApiClient(this._tokenService, this._storeStorage, {bool addInterceptors = true}) {
     dio = Dio(BaseOptions(
-      baseUrl: AppConstants.baseUrl,
+      baseUrl: AppConstants.apiBaseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       headers: {
